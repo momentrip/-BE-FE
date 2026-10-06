@@ -37,7 +37,8 @@
 | 기울기 센서 | `expo-sensors` (DeviceMotion) |
 | 애니메이션 | `react-native-reanimated` |
 | 그래픽 (차, 풍등 등) | `@shopify/react-native-skia` |
-| 실시간 숫자 + 모든 기록 저장·실시간 조회 | Supabase (Postgres + Realtime), `@supabase/supabase-js` |
+| 풍등 수 + 풍등 실시간 피드 (시각·번뇌 종류만) | Supabase (Postgres + Realtime), `@supabase/supabase-js` |
+| 개인 기록 저장 | `expo-sqlite` (기기 로컬) |
 | 테스트 | jest-expo |
 
 - **Expo Go 호환성을 반드시 유지한다.** 커스텀 네이티브 모듈 추가, `expo prebuild` 실행, `ios/`·`android/` 커밋 금지.
@@ -55,18 +56,18 @@ src/
   app/                # expo-router 화면과 흐름 순서. 도메인 컴포넌트를 조합만 한다 (로직 금지)
   features/
     worry/            # 고민 적기
-    lantern/          # 풍등 날리기
+    lantern/          # 풍등 날리기 + 다른 사용자 풍등 실시간 피드
     tea/              # 차 따르기 + 차 마시기 (액체 렌더링 공유)
     meditation/       # 명상하기
     quote/            # 명언 데이터 + 추천 알고리즘 + 명언 화면
-    session/          # 이번 회차 데이터(고민·차·명언) 보관 및 저장
-    history/          # 기록 보기 (모든 사람 기록, 실시간)
+    session/          # 이번 회차 데이터(고민·차·명언) 보관 및 로컬 저장
+    history/          # 내 기록 보기 (로컬)
     safety/           # 위기 감지 + 상담 전화 안내
   shared/
     sensors/          # useTilt 등 기울기 센서 (유일한 센서 구독 지점)
     theme/            # 디자인 토큰: colors, typography, spacing, radius
     ui/               # 도메인과 무관한 공용 컴포넌트
-    lib/              # supabase.ts (유일한 생성 지점)
+    lib/              # supabase.ts, 로컬 DB 연결 (유일한 생성 지점)
 supabase/
   migrations/         # 스키마 변경 SQL
 ```
@@ -174,21 +175,23 @@ export function saveWorry(text: string): Promise<void> { ... }
 
 ## 9. 데이터 저장 규칙
 
-- 고민, 마신 차, 받은 명언 기록은 Supabase에 저장하고, 기록 보기 화면에서 모든 사용자의 기록을 실시간으로 보여준다.
-- 기록 테이블은 INSERT와 SELECT만 허용한다. 앱에서 수정·삭제 기능은 만들지 않는다.
-- 기록 테이블은 supabase_realtime publication에 추가하고, 새 기록은 INSERT 이벤트 구독으로 받는다.
-- 이름 등 개인 식별 정보는 저장하지 않는다. 고민 작성 화면에 다른 사람에게 보일 수 있다는 안내를 표시한다.
-- Supabase·로컬 DB 클라이언트 생성은 `shared/lib`에서만 한다. 호출은 각 도메인 `api/`에서만 한다.
-- 환경 변수: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`. `.env` 커밋 금지, `.env.example`만 커밋한다.
-- `service_role` 키는 레포 어디에도 넣지 않는다.
-- 실시간 숫자는 별도 counters 테이블 없이 records 행 개수(= 풍등 수)로 센다. 풍등 수는 records 개수를 처음 한 번 조회한 뒤 INSERT 이벤트마다 +1 한다.
-- 번뇌 종류는 `records.worry_kind`에 아래 8개 id로 저장한다. 탐·진·치 묶음 매핑은 앱 코드의 상수 한 곳에서만 관리한다.
+- **고민 내용, 고른 차, 받은 명언은 기기 로컬(`expo-sqlite`)에만 저장하고 Supabase로 보내지 않는다.** 기록 보기 화면은 내 기록만 보여준다.
+- 명언 목록은 DB가 아니라 `src/features/quote/data`의 데이터 파일에 둔다. 로컬 기록에는 `quote_id`만 저장하고 데이터 파일에서 찾는다.
+- 다른 사용자와 공유하는 것은 "언제, 어떤 번뇌 종류의 풍등을 날렸는지"뿐이다. Supabase `lanterns` 테이블에는 `created_at`, `worry_kind`만 저장한다.
+- 한 회차가 끝나면 로컬 DB에 내 기록 전체를, `lanterns`에 `created_at`·`worry_kind`만 저장한다.
+- `lanterns`는 RLS를 켜고 INSERT·SELECT 정책만 열며, `supabase_realtime` publication에 추가한다. 앱에서 수정·삭제 기능은 만들지 않는다.
+- 풍등 수는 `lanterns` 행 개수다. 화면 진입 시 개수를 한 번 조회하고, INSERT 이벤트마다 +1 한다.
+- 다른 사용자의 풍등은 `lanterns` INSERT 구독으로 실시간 피드("n분 전에 불안·걱정 풍등")로 보여준다.
+- 번뇌 종류 `worry_kind` id는 아래 8개다. 탐·진·치 묶음 매핑과 화면 표시 이름은 앱 코드의 상수 한 곳에서만 관리한다.
   - 탐: `greed_impatience`, `wavering_temptation`
   - 진: `relationship_anger`, `selfblame_lethargy`
   - 치: `anxiety_worry`, `overthinking`, `career_direction`
   - `unsure`
+- Supabase·로컬 DB 클라이언트 생성은 `shared/lib`에서만 한다. 호출은 각 도메인 `api/`에서만 한다.
+- 환경 변수: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`. `.env` 커밋 금지, `.env.example`만 커밋한다.
+- `service_role` 키는 레포 어디에도 넣지 않는다.
 - 실시간 구독은 언마운트 시 채널을 해제한다.
-- RLS는 켜되, 필요한 INSERT·SELECT 정책만 연다 (대회용으로 보안은 최소). 스키마 변경은 `supabase/migrations/`에 SQL로 남긴다.
+- 스키마 변경은 `supabase/migrations/`에 SQL로 남긴다.
 
 ---
 
@@ -210,7 +213,7 @@ export function saveWorry(text: string): Promise<void> { ... }
 - 고민 텍스트에서 위기 표현이 감지되면 흐름을 강제로 끊지 않고 부드럽게 109 안내를 보여준다.
 - 감지는 놓칠 수 있으므로, 감지와 별개로 항상 접근 가능한 고정 안내(예: 기록 보기 화면)를 둔다.
 - 안내 문구는 겁주거나 단정하지 않고 따뜻하게 쓴다.
-- 위기 표현이 감지된 고민은 기록 보기 화면에서 다른 사용자에게 노출하지 않는다.
+- 고민 내용은 기기 밖으로 전송하지 않는다 (9장).
 
 ---
 
@@ -229,7 +232,7 @@ export function saveWorry(text: string): Promise<void> { ... }
 
 | 일차 | 목표 |
 |---|---|
-| 1 | 레포 세팅, 각자 Expo Go 실행 확인, 기울기+차 프로토타입(실기기), Supabase 세팅 (숫자·기록 테이블 실시간 확인), 명언 데이터 구조 |
+| 1 | 레포 세팅, 각자 Expo Go 실행 확인, 기울기+차 프로토타입(실기기), Supabase 세팅 (풍등 피드 실시간 확인), 로컬 DB 세팅, 명언 데이터 구조 |
 | 2 | 차 따르기, 고민 적기·풍등, session 저장, 추천 v1 |
 | 3 | 1차 통합, 차 마시기·각도별 분기, 명상, 기록 보기 |
 | 4 | 기능 완성, 위기 안내, 추천 개선, 애니메이션 다듬기 |
@@ -260,7 +263,7 @@ export function saveWorry(text: string): Promise<void> { ... }
 4. 이미 export된 함수의 시그니처를 사용자의 명시적 지시 없이 바꾸지 않는다.
 5. 패키지 설치, `package.json` 의존성 변경, `expo prebuild` 실행을 하지 않는다. 필요하면 제안만 한다.
 6. 디자인 토큰 값과 시안에 정의된 UI를 임의로 변경하지 않는다.
-7. Supabase 이외의 외부 서비스로 사용자 기록을 전송하지 않는다.
+7. 고민 내용·차·명언 등 개인 기록을 Supabase나 외부로 전송하는 코드를 작성하지 않는다. Supabase에는 lanterns(created_at, worry_kind)만 보낸다.
 8. 요청받은 범위만 수정한다. 관련 없는 리팩터링·포맷팅 변경 금지.
 9. 작업을 마치기 전 14장의 자동 검사를 실행하고 결과를 보고한다. 실기기 확인이 필요한 변경이면 사람이 확인해야 한다고 명시한다.
 10. 요구사항이 모호하거나 이 문서와 충돌하면 추측하지 말고 질문한다.
