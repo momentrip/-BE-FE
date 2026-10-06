@@ -1,56 +1,39 @@
-# Welcome to your Expo app 👋
+# -BE-FE (예소)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+다선일미의 백엔드와 프론트엔드 개발용 레포지토리입니다.
 
-## Get started
+아이폰 전용 Expo(React Native) 앱입니다. 개발 규칙·폴더 구조·담당 영역은 [AGENTS.md](./AGENTS.md)를 따릅니다.
 
-1. Install dependencies
+## 시작하기
+
+1. 의존성 설치
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. `.env.example`을 복사해 `.env`를 만들고 Supabase 값을 채운다.
+
+   ```bash
+   cp .env.example .env
+   ```
+
+3. 개발 서버 시작
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+4. 아이폰에서 **Expo Go** 앱으로 QR 코드를 스캔해 실행한다. (기울기 센서는 시뮬레이터에서 동작하지 않으므로 반드시 실기기로 확인한다.)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 기술 스택
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Expo(managed) + React Native + TypeScript, expo-router, expo-sensors, react-native-reanimated, @shopify/react-native-skia, Supabase(Postgres + Realtime), expo-sqlite, jest-expo. 자세한 내용과 규칙은 [AGENTS.md](./AGENTS.md)를 참고한다.
 
-## Get a fresh project
-
-When you're ready, run:
+## 검증
 
 ```bash
-npm run reset-project
+npm run typecheck
+npm run lint
+npm run test
 ```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
