@@ -1,0 +1,31 @@
+# AGENTS.md 6장 담당 영역 기준.
+# GitHub 아이디는 PM이 채워 넣습니다. (A=신연아, B=노희윤, C=박세인, D=유민아)
+
+# PM 리뷰어 지정 대상 (AGENTS.md 6장: app/화면 순서, shared/theme, shared/ui)
+/src/app/              @PM-github-id
+/src/shared/theme/     @PM-github-id
+/src/shared/ui/        @PM-github-id
+
+# 신연아 — tea, shared/sensors
+/src/features/tea/     @A-github-id
+/src/shared/sensors/   @A-github-id
+
+# 노희윤 — worry, lantern, meditation
+/src/features/worry/      @B-github-id
+/src/features/lantern/    @B-github-id
+/src/features/meditation/ @B-github-id
+
+# 박세인 — session, history, safety, supabase/, shared/lib
+/src/features/session/ @C-github-id
+/src/features/history/ @C-github-id
+/src/features/safety/  @C-github-id
+/supabase/             @C-github-id
+/src/shared/lib/       @C-github-id
+
+# 유민아 — quote (quote/data는 박세인도 수정 가능)
+/src/features/quote/      @D-github-id
+/src/features/quote/data/ @D-github-id @C-github-id
+
+# 규칙 문서는 PM만 수정 (AGENTS.md 12장)
+/AGENTS.md  @PM-github-id
+/CLAUDE.md  @PM-github-id
