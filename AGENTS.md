@@ -37,7 +37,7 @@
 | 기울기 센서 | `expo-sensors` (DeviceMotion) |
 | 애니메이션 | `react-native-reanimated` |
 | 그래픽 (차, 풍등 등) | `@shopify/react-native-skia` |
-| 풍등 수 + 풍등 실시간 피드 (시각·번뇌 종류만) | Supabase (Postgres + Realtime), `@supabase/supabase-js` |
+| 풍등 수 + 풍등 실시간 피드 (시각·번뇌 종류·차 종류만) | Supabase (Postgres + Realtime), `@supabase/supabase-js` |
 | 개인 기록 저장 | `expo-sqlite` (기기 로컬) |
 | 테스트 | jest-expo |
 
@@ -175,13 +175,15 @@ export function saveWorry(text: string): Promise<void> { ... }
 
 ## 9. 데이터 저장 규칙
 
-- **고민 내용, 고른 차, 받은 명언은 기기 로컬(`expo-sqlite`)에만 저장하고 Supabase로 보내지 않는다.** 기록 보기 화면은 내 기록만 보여준다.
+- **고민 내용과 받은 명언은 기기 로컬(`expo-sqlite`)에만 저장하고 Supabase로 보내지 않는다.** 고른 차는 로컬 기록과 `lanterns` 양쪽에 저장한다. 기록 보기 화면은 내 기록만 보여준다.
 - 명언 목록은 DB가 아니라 `src/features/quote/data`의 데이터 파일에 둔다. 로컬 기록에는 `quote_id`만 저장하고 데이터 파일에서 찾는다.
-- 다른 사용자와 공유하는 것은 "언제, 어떤 번뇌 종류의 풍등을 날렸는지"뿐이다. Supabase `lanterns` 테이블에는 `created_at`, `worry_kind`만 저장한다.
-- 한 회차가 끝나면 로컬 DB에 내 기록 전체를, `lanterns`에 `created_at`·`worry_kind`만 저장한다.
+- 다른 사용자와 공유하는 것은 "언제, 어떤 번뇌 종류의 풍등을, 어떤 차와 함께 날렸는지"뿐이다. Supabase `lanterns` 테이블에는 `created_at`, `worry_kind`, `tea`만 저장한다.
+- 한 회차가 끝나면 로컬 DB에 내 기록 전체를, `lanterns`에 `created_at`·`worry_kind`·`tea`만 저장한다.
 - `lanterns`는 RLS를 켜고 INSERT·SELECT 정책만 열며, `supabase_realtime` publication에 추가한다. 앱에서 수정·삭제 기능은 만들지 않는다.
-- 풍등 수는 `lanterns` 행 개수다. 화면 진입 시 개수를 한 번 조회하고, INSERT 이벤트마다 +1 한다.
-- 다른 사용자의 풍등은 `lanterns` INSERT 구독으로 실시간 피드("n분 전에 불안·걱정 풍등")로 보여준다.
+- 화면에 띄울 풍등 수는 **오늘(기기 시간대 자정 이후)** 날린 `lanterns` 행 개수다. 누적 개수는 쓰지 않는다. 화면 진입 시 오늘 개수를 한 번 조회하고, INSERT 이벤트마다 +1 하며, 자정이 지나면 다시 조회한다.
+- 다른 사용자의 풍등은 `lanterns` INSERT 구독으로 실시간 피드("n분 전 · 불안·걱정 · 캐모마일")로 보여준다.
+- 오늘 차를 마셨는지는 로컬 `my_records`에 오늘(기기 시간대 자정 이후) 기록이 있는지로 판단한다. 별도 컬럼이나 테이블을 두지 않는다.
+- `tea` 값은 `tea` 도메인이 정한 차 id를 그대로 쓴다. 차 이름 등 화면 표시는 앱 코드에서 id로 찾는다.
 - 번뇌 종류 `worry_kind` id는 아래 8개다. 탐·진·치 묶음 매핑과 화면 표시 이름은 앱 코드의 상수 한 곳에서만 관리한다.
   - 탐: `greed_impatience`, `wavering_temptation`
   - 진: `relationship_anger`, `selfblame_lethargy`
@@ -263,7 +265,7 @@ export function saveWorry(text: string): Promise<void> { ... }
 4. 이미 export된 함수의 시그니처를 사용자의 명시적 지시 없이 바꾸지 않는다.
 5. 패키지 설치, `package.json` 의존성 변경, `expo prebuild` 실행을 하지 않는다. 필요하면 제안만 한다.
 6. 디자인 토큰 값과 시안에 정의된 UI를 임의로 변경하지 않는다.
-7. 고민 내용·차·명언 등 개인 기록을 Supabase나 외부로 전송하는 코드를 작성하지 않는다. Supabase에는 lanterns(created_at, worry_kind)만 보낸다.
+7. 고민 내용·명언 등 개인 기록을 Supabase나 외부로 전송하는 코드를 작성하지 않는다. Supabase에는 lanterns(created_at, worry_kind, tea)만 보낸다.
 8. 요청받은 범위만 수정한다. 관련 없는 리팩터링·포맷팅 변경 금지.
 9. 작업을 마치기 전 14장의 자동 검사를 실행하고 결과를 보고한다. 실기기 확인이 필요한 변경이면 사람이 확인해야 한다고 명시한다.
 10. 요구사항이 모호하거나 이 문서와 충돌하면 추측하지 말고 질문한다.
