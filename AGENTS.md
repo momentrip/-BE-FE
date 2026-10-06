@@ -24,6 +24,7 @@
 - 위기 안내: 고민 내용이 많이 힘들어 보이면 자살예방상담전화 109 안내 (**필수 구현**)
 - 실시간 숫자: DB 값이 바뀌면 화면 숫자가 실시간으로 올라감 (다른 사용자와의 실시간 상호작용은 없음)
 - 설정: **구현하지 않는다**
+- 하루 한 잔 등 이용 횟수 제한은 구현하지 않는다 (시연용)
 
 ---
 
@@ -180,7 +181,12 @@ export function saveWorry(text: string): Promise<void> { ... }
 - Supabase·로컬 DB 클라이언트 생성은 `shared/lib`에서만 한다. 호출은 각 도메인 `api/`에서만 한다.
 - 환경 변수: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`. `.env` 커밋 금지, `.env.example`만 커밋한다.
 - `service_role` 키는 레포 어디에도 넣지 않는다.
-- 숫자 증가는 반드시 RPC(Postgres 함수)로 원자적으로 처리한다. 읽고 +1 해서 쓰는 방식 금지.
+- 실시간 숫자는 별도 counters 테이블 없이 records 행 개수(= 풍등 수)로 센다. 풍등 수는 records 개수를 처음 한 번 조회한 뒤 INSERT 이벤트마다 +1 한다.
+- 번뇌 종류는 `records.worry_kind`에 아래 8개 id로 저장한다. 탐·진·치 묶음 매핑은 앱 코드의 상수 한 곳에서만 관리한다.
+  - 탐: `greed_impatience`, `wavering_temptation`
+  - 진: `relationship_anger`, `selfblame_lethargy`
+  - 치: `anxiety_worry`, `overthinking`, `career_direction`
+  - `unsure`
 - 실시간 구독은 언마운트 시 채널을 해제한다.
 - RLS는 켜되, 필요한 INSERT·SELECT 정책만 연다 (대회용으로 보안은 최소). 스키마 변경은 `supabase/migrations/`에 SQL로 남긴다.
 
@@ -189,6 +195,7 @@ export function saveWorry(text: string): Promise<void> { ... }
 ## 10. 명언 추천 알고리즘 규칙
 
 - 방식: 명언마다 태그(`themes`, `tone`, `teas` 등)를 달고, 사용자 입력과의 일치도로 점수를 매겨 최고점을 고른다.
+- 명언 데이터의 `themes` 태그는 `worry_kind` id를 그대로 사용한다.
 - `recommendQuote`는 **순수 함수**: 같은 입력이면 같은 출력, 네트워크·DB·전역 상태 변경 없음.
 - 랜덤 요소는 seed를 입력으로 받는다 (시연 재현성).
 - 결과가 비는 경우가 없어야 한다. 항상 기본 명언 fallback을 둔다.
