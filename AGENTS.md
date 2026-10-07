@@ -59,7 +59,7 @@ src/
     lantern/          # 풍등 날리기 + 다른 사용자 풍등 실시간 피드
     tea/              # 차 따르기 + 차 마시기 (액체 렌더링 공유)
     meditation/       # 명상하기
-    quote/            # 명언 데이터 + 추천 알고리즘 + 명언 화면
+    quote/            # 명언 데이터 + 추천 알고리즘 + 번뇌 종류 자동 매칭 + 명언 화면
     session/          # 이번 회차 데이터(고민·차·명언) 보관 및 로컬 저장
     history/          # 내 기록 보기 (로컬)
     safety/           # 위기 감지 + 상담 전화 안내
@@ -68,6 +68,7 @@ src/
     theme/            # 디자인 토큰: colors, typography, spacing, radius
     ui/               # 도메인과 무관한 공용 컴포넌트
     lib/              # supabase.ts, 로컬 DB 연결 (유일한 생성 지점)
+    constants/        # 여러 도메인이 같이 쓰는 고정 값 (번뇌 종류 id·묶음·표시 이름 등)
 supabase/
   migrations/         # 스키마 변경 SQL
 ```
@@ -117,7 +118,7 @@ src/features/<domain>/
 2. 없으면 그 도메인 담당자에게 **함수 이름, 입력, 출력**을 제안하고 합의한다.
 3. 담당자는 합의한 시그니처로 **먼저 임시 구현(stub)을 export**해서 요청자가 바로 쓸 수 있게 한다. 실제 구현은 그 뒤에 채운다.
 4. 요청자는 자기 도메인에 대신 구현하거나 복사하지 않는다.
-5. `index.ts`에서 export하는 모든 함수에는 JSDoc 주석으로 **용도, 입력·출력, 사용하는 도메인**을 적는다.
+5. `index.ts`로 공개하는 모든 함수에는 JSDoc 주석으로 **용도, 입력·출력, 사용하는 도메인**을 적는다. JSDoc은 **함수 정의 바로 위**에 단다 (에디터 hover에 보이도록). `index.ts`는 re-export만 한다.
 
 ```ts
 /**
@@ -125,10 +126,29 @@ src/features/<domain>/
  * @param text 사용자가 적은 고민
  * 사용처: worry
  */
-export function saveWorry(text: string): Promise<void> { ... }
+export function saveWorry(text: string, kind: WorryKind): void { ... }
 ```
 
 6. 이미 다른 도메인이 사용 중인 함수의 시그니처를 바꿀 때는 사용하는 도메인 담당자와 합의한다.
+
+### 요청은 GitHub issue로 한다
+
+- 함수 요청·시그니처 변경은 GitHub issue로 올린다 (템플릿: **함수 요청**).
+- 제목: `[함수 요청] <도메인>: <함수명>`
+- 본문: 함수명, 입력, 출력, 사용처(요청 도메인), 필요한 시점
+- 해당 도메인 담당자를 Assignee로 지정한다. 합의는 issue 댓글로 남기고, 담당자는 stub PR 본문에 `Closes #<번호>`를 적는다.
+
+### 함수 이름·모양 규칙
+
+1. 이름은 동사로 시작하는 camelCase. 동사는 아래에서 고른다.
+   - `get`: 값을 조회해 돌려준다 (`getLocalDb`, `getCurrentSession`)
+   - `save`: 저장한다 (`saveWorry`)
+   - 순수 계산은 하는 일을 그대로 쓴다: `filter` / `recommend` / `detect` / `match` (`filterAttitude`, `recommendQuote`)
+   - `use`: React 훅 (`useTiltShared`)
+2. 비동기 함수는 `Promise`를 반환하고, 이름에 `Async`를 붙이지 않는다.
+3. 인자는 2개까지 순서대로 받고, 3개 이상이거나 선택 인자가 있으면 객체 하나로 받는다.
+4. 타입은 PascalCase. 상태값은 문자열 리터럴 유니온으로 쓰고 `enum`은 쓰지 않는다. 공개 타입도 `index.ts`에서 `export type`으로 내보낸다.
+5. 실패하면 throw한다. `null`은 "값이 없음"이 정상 결과일 때만 돌려준다.
 
 ---
 
@@ -138,11 +158,11 @@ export function saveWorry(text: string): Promise<void> { ... }
 |---|---|
 | 신연아 | `tea`, `shared/sensors` |
 | 노희윤 | `worry`, `lantern`, `meditation` |
-| 박세인 | `session`, `history`, `safety`, `supabase/`, `shared/lib` |
+| 박세인 | `session`, `history`, `safety`, `supabase/`, `shared/lib`, `shared/constants` |
 | 유민아 | `quote` (`quote/data`는 C도 수정 가능) |
 
 - `src/app/`(화면 순서)과 `shared/theme`, `shared/ui`는 수정 시 PR에 PM을 리뷰어로 지정한다.
-- 알고리즘 로직(`features/quote/logic`)은 D만 작성한다.
+- 알고리즘 로직(`features/quote/logic`: 명언 추천, 번뇌 종류 자동 매칭)은 D만 작성한다.
 
 ---
 
@@ -184,7 +204,7 @@ export function saveWorry(text: string): Promise<void> { ... }
 - 다른 사용자의 풍등은 `lanterns` INSERT 구독으로 실시간 피드("n분 전 · 불안·걱정 · 캐모마일")로 보여준다.
 - 오늘 차를 마셨는지는 로컬 `my_records`에 오늘(기기 시간대 자정 이후) 기록이 있는지로 판단한다. 별도 컬럼이나 테이블을 두지 않는다.
 - `tea` 값은 `tea` 도메인이 정한 차 id를 그대로 쓴다. 차 이름 등 화면 표시는 앱 코드에서 id로 찾는다.
-- 번뇌 종류 `worry_kind` id는 아래 8개다. 탐·진·치 묶음 매핑과 화면 표시 이름은 앱 코드의 상수 한 곳에서만 관리한다.
+- 번뇌 종류 `worry_kind` id는 아래 8개다. 탐·진·치 묶음 매핑과 화면 표시 이름은 `src/shared/constants`의 상수 한 곳에서만 관리한다.
   - 탐: `greed_impatience`, `wavering_temptation`
   - 진: `relationship_anger`, `selfblame_lethargy`
   - 치: `anxiety_worry`, `overthinking`, `career_direction`
@@ -207,6 +227,14 @@ export function saveWorry(text: string): Promise<void> { ... }
 - 위기 상황으로 판단된 입력에는 무겁거나 어두운 명언을 고르지 않는다 (`safety`와 기준 공유).
 - 명언 데이터에는 출처와 말한 사람을 기록하고, 저작권 문제가 없는 문구만 사용한다.
 - `logic/`의 함수는 jest 단위 테스트를 작성한다.
+
+### 번뇌 종류 자동 매칭
+
+- 고민 텍스트로 `worry_kind`를 자동으로 고르고, 사용자는 고민 적기 화면에서 결과를 바꿀 수 있다.
+- **기기 안의 키워드 매칭**으로 한다. 외부 LLM·API를 쓰지 않는다 (고민 내용은 기기 밖으로 보내지 않는다, 9장).
+- 방식: `worry_kind`마다 키워드 목록을 두고, 텍스트에 들어 있는 키워드 수로 점수를 매겨 최고점을 고른다. 일치가 없으면 `unsure`.
+- 추천 알고리즘과 같은 규칙을 따른다: 순수 함수, 동점 처리 규칙을 고정해 같은 입력이면 같은 출력, jest 단위 테스트 작성.
+- 시연에 쓸 고민 문장은 의도한 종류로 매칭되는지 테스트 케이스로 고정한다.
 
 ---
 
@@ -260,7 +288,7 @@ export function saveWorry(text: string): Promise<void> { ... }
 ## 15. AI 코딩 에이전트 전용 규칙
 
 1. 작업 시작 전 **어느 도메인의 작업인지** 판단하고, 그 도메인 폴더 밖은 수정하지 않는다.
-2. 다른 도메인의 기능이 필요하면 그 도메인 `index.ts`를 확인한다. 없으면 **직접 구현하거나 복사하지 말고 작업을 멈춘 뒤**, 필요한 함수의 이름·입력·출력 제안을 사용자에게 보여주고 "해당 도메인 담당자와 협의가 필요하다"고 알린다 (5장).
+2. 다른 도메인의 기능이 필요하면 그 도메인 `index.ts`를 확인한다. 없으면 **직접 구현하거나 복사하지 말고 작업을 멈춘 뒤**, 필요한 함수의 이름·입력·출력 제안을 사용자에게 보여주고 "해당 도메인 담당자와 협의가 필요하다"고 알린다. 제안은 5장의 이름·모양 규칙을 따르고, 바로 올릴 수 있는 GitHub issue 본문 형태로 작성한다 (5장).
 3. 사용자가 해당 도메인 담당자라고 밝히고 공개 함수 추가를 요청하면, `index.ts`에 JSDoc(용도, 입력·출력, 사용처)과 함께 export한다.
 4. 이미 export된 함수의 시그니처를 사용자의 명시적 지시 없이 바꾸지 않는다.
 5. 패키지 설치, `package.json` 의존성 변경, `expo prebuild` 실행을 하지 않는다. 필요하면 제안만 한다.
