@@ -21,6 +21,7 @@
 /src/features/safety/  @parksein0223
 /supabase/             @parksein0223
 /src/shared/lib/       @parksein0223
+/src/shared/constants/ @parksein0223
 
 # 유민아 — quote (quote/data는 박세인도 수정 가능)
 /src/features/quote/      @yumina0616
