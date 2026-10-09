@@ -4,18 +4,18 @@ import {
   averageQuaternions,
   calculateRelativeOrientation,
   eulerAttitudeToQuaternion,
-} from "../logic/orientation";
-import type { Quaternion } from "../logic/orientation";
-import { advanceTeaFillState } from "../logic/fillProgress";
-import { getZTwistPouringState } from "../logic/zTwistState";
-import type { PouringDirectionCandidate } from "../logic/pouringDirection";
-import type { TeaPouringStatus } from "../logic/zTwistState";
+} from "../utils/orientation";
+import type { Quaternion } from "../utils/orientation";
+import { advanceTeaFillState } from "../utils/fillProgress";
+import { getZTwistPouringState } from "../utils/zTwistState";
+import type { PouringDirectionCandidate } from "../utils/pouringDirection";
+import type { TeaPouringStatus } from "../utils/zTwistState";
 import {
   BASELINE_CALIBRATION_DURATION_MS,
   MIN_BASELINE_SAMPLES,
   POURING_FILL_DURATION_MS,
   POURING_STATE_POLL_INTERVAL_MS,
-} from "../logic/pouringThresholds";
+} from "../utils/pouringThresholds";
 
 export type TeaPouringCalibrationStatus = "calibrating" | "ready" | "unavailable" | "error";
 
