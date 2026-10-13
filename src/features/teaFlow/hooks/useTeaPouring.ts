@@ -6,14 +6,12 @@ import {
   eulerAttitudeToQuaternion,
 } from "../utils/orientation";
 import type { Quaternion } from "../utils/orientation";
-import { advanceTeaFillState } from "../utils/fillProgress";
 import { getZTwistPouringState } from "../utils/zTwistState";
 import type { PouringDirectionCandidate } from "../utils/pouringDirection";
 import type { TeaPouringStatus } from "../utils/zTwistState";
 import {
   BASELINE_CALIBRATION_DURATION_MS,
   MIN_BASELINE_SAMPLES,
-  POURING_FILL_DURATION_MS,
   POURING_STATE_POLL_INTERVAL_MS,
 } from "../utils/pouringThresholds";
 
@@ -24,7 +22,6 @@ export type TeaPouringState = {
   zTwistDegrees: number | null;
   direction: PouringDirectionCandidate;
   status: TeaPouringStatus;
-  fillProgress: number;
 };
 
 const INITIAL_STATE: TeaPouringState = {
@@ -32,14 +29,13 @@ const INITIAL_STATE: TeaPouringState = {
   zTwistDegrees: null,
   direction: "neutral",
   status: "idle",
-  fillProgress: 0,
 };
 
 /**
- * S5 진입 자세를 baseline으로 보정하고 Z twist 기반 차 따르기 상태를 계산한다.
+ * S3/S5 진입 자세를 baseline으로 보정하고 Z twist 기반 따르기 센서 상태를 계산한다.
  * 입력: 없음. shared/sensors의 자세 값을 사용한다.
- * @returns 보정 상태, Z twist, 방향, 따르기 상태, 0~1 범위의 채움 진행도
- * 사용처: tea S5 차 따르기 화면
+ * @returns 보정 상태, 현재 Z twist, 방향, idle/pouring/tooFast 상태
+ * 사용처: teaFlow S3 물 붓기 및 S5 차 따르기 화면
  */
 export function useTeaPouring(): TeaPouringState {
   const { attitude, status: sensorStatus } = useTiltShared();
@@ -84,12 +80,7 @@ export function useTeaPouring(): TeaPouringState {
       return;
     }
 
-    let lastTickAt = Date.now();
     const stateTimer = setInterval(() => {
-      const now = Date.now();
-      const elapsedMs = now - lastTickAt;
-      lastTickAt = now;
-
       const sample = attitude.value;
       const current = sample === null ? null : eulerAttitudeToQuaternion(sample);
       const relative = current === null
@@ -98,20 +89,10 @@ export function useTeaPouring(): TeaPouringState {
       const zTwistDegrees = relative?.twistDegrees.z ?? null;
       const detectedState = getZTwistPouringState(zTwistDegrees);
 
-      setPouringState((previous) => {
-        const nextFillState = advanceTeaFillState({
-          previous,
-          status: detectedState.status,
-          direction: detectedState.direction,
-          elapsedMs,
-          fillDurationMs: POURING_FILL_DURATION_MS,
-        });
-
-        return {
-          calibrationStatus: "ready",
-          zTwistDegrees,
-          ...nextFillState,
-        };
+      setPouringState({
+        calibrationStatus: "ready",
+        zTwistDegrees,
+        ...detectedState,
       });
     }, POURING_STATE_POLL_INTERVAL_MS);
 
