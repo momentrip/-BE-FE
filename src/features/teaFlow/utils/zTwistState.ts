@@ -2,10 +2,10 @@ import { getPouringDirectionCandidate } from "./pouringDirection";
 import type { PouringDirectionCandidate } from "./pouringDirection";
 import { Z_TWIST_THRESHOLDS } from "./pouringThresholds";
 
-export type TeaPouringStatus = "idle" | "pouring" | "tooFast" | "full";
+export type TeaPouringStatus = "idle" | "pouring" | "tooFast";
 
 export type ZTwistPouringState = {
-  status: Exclude<TeaPouringStatus, "full">;
+  status: TeaPouringStatus;
   direction: PouringDirectionCandidate;
 };
 
