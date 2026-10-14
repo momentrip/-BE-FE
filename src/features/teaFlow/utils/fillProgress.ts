@@ -1,9 +1,11 @@
 import type { PouringDirectionCandidate } from "./pouringDirection";
 import type { TeaPouringStatus } from "./zTwistState";
 
+export type TeaFillStatus = TeaPouringStatus | "full";
+
 export type TeaFillState = {
   fillProgress: number;
-  status: TeaPouringStatus;
+  status: TeaFillStatus;
   direction: PouringDirectionCandidate;
 };
 
@@ -16,7 +18,7 @@ type AdvanceFillProgressParams = {
 
 type AdvanceTeaFillStateParams = {
   previous: TeaFillState;
-  status: Exclude<TeaPouringStatus, "full">;
+  status: TeaPouringStatus;
   direction: PouringDirectionCandidate;
   elapsedMs: number;
   fillDurationMs: number;
