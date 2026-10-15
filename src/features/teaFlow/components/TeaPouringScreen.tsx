@@ -7,6 +7,7 @@ import { S5_DEFAULT_TEA_COLOR } from "../constants/s5Pouring";
 import { useS5PouringProgress } from "../hooks/useS5PouringProgress";
 import { useTeaPouring } from "../hooks/useTeaPouring";
 import { Z_TWIST_THRESHOLDS } from "../utils/pouringThresholds";
+import { getS5EffectivePouringState } from "../utils/s5PouringState";
 import type { TeaPouringStatus } from "../utils/zTwistState";
 
 const DESIGN_WIDTH = 393;
@@ -164,10 +165,15 @@ export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouring
   const { width, height } = useWindowDimensions();
   const pouring = useTeaPouring();
   const sensorReady = pouring.calibrationStatus === "ready";
-  const visibleStatus = sensorReady ? pouring.status : "idle";
+  const effectivePouring = getS5EffectivePouringState({
+    status: pouring.status,
+    direction: pouring.direction,
+  });
+  const visibleStatus = sensorReady ? effectivePouring.status : "idle";
+  const visibleDirection = sensorReady ? effectivePouring.direction : "neutral";
   const { progress, completed } = useS5PouringProgress({
     status: visibleStatus,
-    direction: pouring.direction,
+    direction: visibleDirection,
     enabled: sensorReady,
   });
   const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
