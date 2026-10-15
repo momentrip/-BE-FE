@@ -1,7 +1,15 @@
 import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { StyleProp, ViewStyle } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { Canvas, LinearGradient, Oval, Path, RadialGradient, vec } from "@shopify/react-native-skia";
+import {
+  Canvas,
+  Group,
+  LinearGradient,
+  Oval,
+  Path,
+  RadialGradient,
+  vec,
+} from "@shopify/react-native-skia";
 
 import { fontFamily } from "@/shared/theme";
 
@@ -20,6 +28,7 @@ const DESIGN_HEIGHT = 852;
 const ANGLE_BAR_LEFT = 65;
 const ANGLE_BAR_WIDTH = 260;
 const POINTER_WIDTH = 26;
+const POINTER_EDGE_PADDING = 1;
 const POINTER_MIN_LEFT = 57;
 const POINTER_MAX_LEFT = ANGLE_BAR_LEFT + ANGLE_BAR_WIDTH - POINTER_WIDTH / 2;
 
@@ -91,19 +100,28 @@ type AngleBarProps = {
 };
 
 function AngleBar({ displayAngleDegrees, status }: AngleBarProps) {
+  const pointerLeft = getPointerLeft(status, displayAngleDegrees);
+
   return (
     <View style={styles.angleArea}>
       <Canvas
-        style={[styles.anglePointer, { left: getPointerLeft(status, displayAngleDegrees) }]}
+        style={[styles.anglePointer, { left: pointerLeft - POINTER_EDGE_PADDING }]}
       >
-        <Path path={ANGLE_POINTER_BODY_PATH}>
-          <LinearGradient
-            start={vec(13, 2)}
-            end={vec(13, 18)}
-            colors={["#eae5da", "#a9a296"]}
-          />
-        </Path>
-        <Path path={ANGLE_POINTER_RIM_PATH} color="#d8d1c3" />
+        <Group
+          transform={[
+            { translateX: POINTER_EDGE_PADDING },
+            { translateY: POINTER_EDGE_PADDING },
+          ]}
+        >
+          <Path path={ANGLE_POINTER_BODY_PATH}>
+            <LinearGradient
+              start={vec(13, 2)}
+              end={vec(13, 18)}
+              colors={["#eae5da", "#a9a296"]}
+            />
+          </Path>
+          <Path path={ANGLE_POINTER_RIM_PATH} color="#d8d1c3" />
+        </Group>
       </Canvas>
       <View style={styles.angleBar}>
         <View style={styles.idleRange} />
@@ -150,7 +168,7 @@ function SmallTeacup({ progress, teaColor }: Pick<PouringVisualProps, "progress"
       <Canvas style={styles.smallCupRim}>
         <Path path={SMALL_CUP_RIM_PATH} color="#69777e" />
       </Canvas>
-      <Image source={screenAssets.teacup} style={styles.teacup} />
+      <Image source={screenAssets.teacup} style={styles.teacupTexture} />
     </View>
   );
 }
@@ -242,22 +260,27 @@ export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouring
         <Image source={screenAssets.backgroundLayer3} style={styles.background} />
         <StepIndicator />
 
-        {showCompleted ? (
+        <View
+          pointerEvents="none"
+          style={[styles.stateLayer, showCompleted && styles.hiddenStateLayer]}
+        >
+          <PouringVisual status={visibleStatus} progress={progress} teaColor={teaColor} />
+          <Text
+            style={visibleStatus === "tooFast" ? styles.warningMessage : styles.instructionMessage}
+          >
+            {messageByStatus[visibleStatus]}
+          </Text>
+          {!sensorReady && (
+            <Image source={screenAssets.calibrationIcon} style={styles.calibrationIcon} />
+          )}
+          <AngleBar displayAngleDegrees={displayAngleDegrees} status={visibleStatus} />
+        </View>
+        <View
+          pointerEvents="none"
+          style={[styles.stateLayer, !showCompleted && styles.hiddenStateLayer]}
+        >
           <CompletedVisual teaColor={teaColor} />
-        ) : (
-          <>
-            <PouringVisual status={visibleStatus} progress={progress} teaColor={teaColor} />
-            <Text
-              style={visibleStatus === "tooFast" ? styles.warningMessage : styles.instructionMessage}
-            >
-              {messageByStatus[visibleStatus]}
-            </Text>
-            {!sensorReady && (
-              <Image source={screenAssets.calibrationIcon} style={styles.calibrationIcon} />
-            )}
-            <AngleBar displayAngleDegrees={displayAngleDegrees} status={visibleStatus} />
-          </>
-        )}
+        </View>
 
       </View>
     </View>
@@ -285,6 +308,16 @@ const styles = StyleSheet.create({
     left: 0,
     width: DESIGN_WIDTH,
     height: DESIGN_HEIGHT,
+  },
+  stateLayer: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  hiddenStateLayer: {
+    opacity: 0,
   },
   steps: {
     position: "absolute",
@@ -332,12 +365,12 @@ const styles = StyleSheet.create({
     width: 190,
     height: 190,
   },
-  teacup: {
+  teacupTexture: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    width: 96,
-    height: 82,
+    top: -6.5,
+    left: -1.5,
+    width: 112,
+    height: 95.67,
   },
   smallCupClip: {
     position: "absolute",
@@ -416,9 +449,9 @@ const styles = StyleSheet.create({
   },
   anglePointer: {
     position: "absolute",
-    top: 0,
-    width: 26,
-    height: 18,
+    top: -POINTER_EDGE_PADDING,
+    width: POINTER_WIDTH + POINTER_EDGE_PADDING * 2,
+    height: 18 + POINTER_EDGE_PADDING * 2,
   },
   angleBar: {
     position: "absolute",
