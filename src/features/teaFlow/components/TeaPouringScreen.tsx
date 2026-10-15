@@ -1,5 +1,7 @@
 import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import type { StyleProp, ViewStyle } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { Canvas, Oval, Path, RadialGradient, vec } from "@shopify/react-native-skia";
 
 import { fontFamily } from "@/shared/theme";
 
@@ -28,13 +30,14 @@ const screenAssets = {
   teapot: require("@/assets/images/teaFlow/s5-teapot.png"),
   teacup: require("@/assets/images/teaFlow/s5-teacup.png"),
   fullTeacup: require("@/assets/images/teaFlow/s5-teacup-full.png"),
-  fullTeacupGlow: require("@/assets/images/teaFlow/s5-teacup-full-glow.png"),
   pointer: require("@/assets/images/teaFlow/s5-angle-pointer.png"),
-  idleGlow: require("@/assets/images/teaFlow/s5-teapot-glow-idle.png"),
-  pouringGlow: require("@/assets/images/teaFlow/s5-teapot-glow-pouring.png"),
-  tooFastGlow: require("@/assets/images/teaFlow/s5-teapot-glow-too-fast.png"),
   calibrationIcon: require("@/assets/images/teaFlow/s5-calibration-icon.png"),
 } as const;
+
+const SMALL_CUP_BODY_PATH =
+  "M1 10.5L0 2.5L3 4L5 5.5L8 7L10.5 8L14.5 9L20 10.5L26 11.5L34 12.5H42L50.5 12L59.5 10.5L66.5 9L71.5 7.5L79 3.5L84 0V3L83 8.5L81 15L79 21L76.5 28L73.5 33.5L70.5 38L66.5 43.5L61 48L57.5 49.5L53 51L48 52H34.5L31.5 51.5L27.5 51L25 49.5L22.5 49L20 47L18 44.5L14 39.5L10.5 34L8 29.5L5.5 24L3 18L1 10.5Z";
+const SMALL_CUP_RIM_PATH =
+  "M4 0L0 1.5L0.5 3L3 4.5L5.5 6L8 7L11.5 8.5L14.5 9.5L19 10.5L23 11L28 12L32 12.5H45L50.5 12L59 11L65 9.5L70 8L74.5 5.5L77.5 3.5L75 0L71.5 2.5L63 5.5L57.5 7L48.5 8H28.5L24.5 7L20 6.5L15.5 5L11 3.5L7.5 2L4 0Z";
 
 const messageByStatus: Record<TeaPouringStatus, string> = {
   idle: "다관을 기울여 찻잔에 따르세요",
@@ -104,6 +107,41 @@ function AngleBar({ displayAngleDegrees, status }: AngleBarProps) {
   );
 }
 
+type RadialGlowProps = {
+  color: string;
+  style: StyleProp<ViewStyle>;
+};
+
+function RadialGlow({ color, style }: RadialGlowProps) {
+  return (
+    <Canvas style={style}>
+      <Oval x={0} y={0} width={224} height={230}>
+        <RadialGradient c={vec(112, 115)} r={120.699} colors={[color, "rgba(115,115,115,0)"]} />
+      </Oval>
+    </Canvas>
+  );
+}
+
+function SmallTeacup({ progress, teaColor }: Pick<PouringVisualProps, "progress" | "teaColor">) {
+  return (
+    <>
+      <View
+        style={[
+          styles.teacupTeaSurface,
+          { backgroundColor: teaColor, opacity: progress * 0.65 },
+        ]}
+      />
+      <Canvas style={styles.smallCupBody}>
+        <Path path={SMALL_CUP_BODY_PATH} color="#3e4a50" />
+      </Canvas>
+      <Canvas style={styles.smallCupRim}>
+        <Path path={SMALL_CUP_RIM_PATH} color="#69777e" />
+      </Canvas>
+      <Image source={screenAssets.teacup} style={styles.teacup} />
+    </>
+  );
+}
+
 type PouringVisualProps = {
   status: TeaPouringStatus;
   progress: number;
@@ -112,25 +150,19 @@ type PouringVisualProps = {
 
 function PouringVisual({ status, progress, teaColor }: PouringVisualProps) {
   const rotation = status === "pouring" ? "-15deg" : status === "tooFast" ? "-30deg" : "0deg";
-  const glow = status === "pouring"
-    ? screenAssets.pouringGlow
+  const glowColor = status === "pouring"
+    ? "rgba(255,233,90,0.29)"
     : status === "tooFast"
-      ? screenAssets.tooFastGlow
-      : screenAssets.idleGlow;
+      ? "rgba(255,90,90,0.36)"
+      : "rgba(255,233,90,0.13)";
 
   return (
     <>
-      <Image source={glow} style={styles.teapotGlow} />
+      <RadialGlow color={glowColor} style={styles.teapotGlow} />
       <View style={styles.teapotFrame}>
         <Image source={screenAssets.teapot} style={[styles.teapot, { transform: [{ rotate: rotation }] }]} />
       </View>
-      <Image source={screenAssets.teacup} style={styles.teacup} />
-      <View
-        style={[
-          styles.teacupTeaSurface,
-          { backgroundColor: teaColor, opacity: progress * 0.65 },
-        ]}
-      />
+      <SmallTeacup progress={progress} teaColor={teaColor} />
     </>
   );
 }
@@ -142,9 +174,11 @@ type CompletedVisualProps = {
 function CompletedVisual({ teaColor }: CompletedVisualProps) {
   return (
     <>
-      <Image source={screenAssets.fullTeacupGlow} style={styles.fullTeacupGlow} />
-      <Image source={screenAssets.fullTeacup} style={styles.fullTeacup} />
+      <RadialGlow color="rgba(255,233,90,1)" style={styles.fullTeacupGlow} />
+      <View style={styles.fullCupBodyLower} />
+      <View style={styles.fullCupBodyUpper} />
       <View style={[styles.fullTeaSurface, { backgroundColor: teaColor }]} />
+      <Image source={screenAssets.fullTeacup} style={styles.fullTeacup} />
       <View style={styles.completedMessage}>
         <Text style={styles.completedTitle}>찻잔이 가득 찼어요</Text>
         <Text style={styles.completedSubtitle}>이제 고민과 함께 마셔요</Text>
@@ -291,6 +325,20 @@ const styles = StyleSheet.create({
     width: 96,
     height: 82,
   },
+  smallCupBody: {
+    position: "absolute",
+    top: 475.5,
+    left: 72,
+    width: 84,
+    height: 52,
+  },
+  smallCupRim: {
+    position: "absolute",
+    top: 475,
+    left: 73,
+    width: 77.5,
+    height: 12.5,
+  },
   teacupTeaSurface: {
     position: "absolute",
     top: 456,
@@ -388,6 +436,24 @@ const styles = StyleSheet.create({
     left: 86,
     width: 224,
     height: 230,
+  },
+  fullCupBodyLower: {
+    position: "absolute",
+    top: 382,
+    left: 142.5,
+    width: 110,
+    height: 115,
+    borderRadius: 57.5,
+    backgroundColor: "#3e4a50",
+  },
+  fullCupBodyUpper: {
+    position: "absolute",
+    top: 358,
+    left: 126.5,
+    width: 141,
+    height: 94,
+    borderRadius: 47,
+    backgroundColor: "#6c7b83",
   },
   fullTeaSurface: {
     position: "absolute",
