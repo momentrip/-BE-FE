@@ -13,7 +13,7 @@ import {
 
 import { fontFamily } from "@/shared/theme";
 
-import { S5_DEFAULT_TEA_COLOR } from "../constants/s5Pouring";
+import { S5_CUP_COLORS, S5_DEFAULT_TEA_COLOR } from "../constants/s5Pouring";
 import { useS5PouringProgress } from "../hooks/useS5PouringProgress";
 import { useTeaPouring } from "../hooks/useTeaPouring";
 import { Z_TWIST_THRESHOLDS } from "../utils/pouringThresholds";
@@ -21,6 +21,7 @@ import {
   getS5DisplayAngleDegrees,
   getS5EffectivePouringState,
 } from "../utils/s5PouringState";
+import { getS5LiquidOpacity } from "../utils/s5LiquidDisplay";
 import type { TeaPouringStatus } from "../utils/zTwistState";
 
 const DESIGN_WIDTH = 393;
@@ -158,15 +159,15 @@ function SmallTeacup({ progress, teaColor }: Pick<PouringVisualProps, "progress"
         <View
           style={[
             styles.teacupTeaSurface,
-            { backgroundColor: teaColor, opacity: progress * 0.65 },
+            { backgroundColor: teaColor, opacity: getS5LiquidOpacity(progress) },
           ]}
         />
       </View>
       <Canvas style={styles.smallCupBody}>
-        <Path path={SMALL_CUP_BODY_PATH} color="#3e4a50" />
+        <Path path={SMALL_CUP_BODY_PATH} color={S5_CUP_COLORS.body} />
       </Canvas>
       <Canvas style={styles.smallCupRim}>
-        <Path path={SMALL_CUP_RIM_PATH} color="#69777e" />
+        <Path path={SMALL_CUP_RIM_PATH} color={S5_CUP_COLORS.rim} />
       </Canvas>
       <Image source={screenAssets.teacup} style={styles.teacupTexture} />
     </View>
@@ -208,7 +209,12 @@ function CompletedVisual({ teaColor }: CompletedVisualProps) {
       <RadialGlow color="rgba(255,233,90,1)" style={styles.fullTeacupGlow} />
       <View style={styles.fullCupBodyLower} />
       <View style={styles.fullCupBodyUpper} />
-      <View style={[styles.fullTeaSurface, { backgroundColor: teaColor }]} />
+      <View
+        style={[
+          styles.fullTeaSurface,
+          { backgroundColor: teaColor, opacity: getS5LiquidOpacity(1) },
+        ]}
+      />
       <Image source={screenAssets.fullTeacup} style={styles.fullTeacup} />
       <View style={styles.completedMessage}>
         <Text style={styles.completedTitle}>찻잔이 가득 찼어요</Text>
@@ -508,7 +514,7 @@ const styles = StyleSheet.create({
     width: 110,
     height: 115,
     borderRadius: 57.5,
-    backgroundColor: "#3e4a50",
+    backgroundColor: S5_CUP_COLORS.body,
   },
   fullCupBodyUpper: {
     position: "absolute",
@@ -517,7 +523,7 @@ const styles = StyleSheet.create({
     width: 141,
     height: 94,
     borderRadius: 47,
-    backgroundColor: "#6c7b83",
+    backgroundColor: S5_CUP_COLORS.completedUpperBody,
   },
   fullTeaSurface: {
     position: "absolute",
@@ -526,7 +532,6 @@ const styles = StyleSheet.create({
     width: 114.68,
     height: 66.4,
     borderRadius: 57.34,
-    opacity: 0.52,
   },
   completedMessage: {
     position: "absolute",
