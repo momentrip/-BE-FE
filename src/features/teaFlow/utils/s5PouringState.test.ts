@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 
 import {
+  getS5DisplayAngleDegrees,
   getS5EffectivePouringState,
   S5_ALLOWED_POURING_DIRECTION,
 } from "./s5PouringState";
@@ -35,5 +36,19 @@ describe("getS5EffectivePouringState", () => {
       status: "idle",
       direction: "neutral",
     });
+  });
+});
+
+describe("getS5DisplayAngleDegrees", () => {
+  it("keeps the allowed left-direction angle", () => {
+    expect(getS5DisplayAngleDegrees({ direction: "left", zTwistDegrees: 32 })).toBe(32);
+  });
+
+  it("fixes the opposite right-direction angle at zero", () => {
+    expect(getS5DisplayAngleDegrees({ direction: "right", zTwistDegrees: -56 })).toBe(0);
+  });
+
+  it("fixes the neutral direction angle at zero", () => {
+    expect(getS5DisplayAngleDegrees({ direction: "neutral", zTwistDegrees: 7 })).toBe(0);
   });
 });

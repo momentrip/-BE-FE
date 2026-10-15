@@ -7,7 +7,10 @@ import { S5_DEFAULT_TEA_COLOR } from "../constants/s5Pouring";
 import { useS5PouringProgress } from "../hooks/useS5PouringProgress";
 import { useTeaPouring } from "../hooks/useTeaPouring";
 import { Z_TWIST_THRESHOLDS } from "../utils/pouringThresholds";
-import { getS5EffectivePouringState } from "../utils/s5PouringState";
+import {
+  getS5DisplayAngleDegrees,
+  getS5EffectivePouringState,
+} from "../utils/s5PouringState";
 import type { TeaPouringStatus } from "../utils/zTwistState";
 
 const DESIGN_WIDTH = 393;
@@ -39,8 +42,8 @@ const messageByStatus: Record<TeaPouringStatus, string> = {
   tooFast: "너무 급해요 · 조금 세워주세요",
 };
 
-function getVisualAngle(status: TeaPouringStatus, zTwistDegrees: number | null): number {
-  const absoluteTwist = Math.abs(zTwistDegrees ?? 0);
+function getVisualAngle(status: TeaPouringStatus, displayAngleDegrees: number): number {
+  const absoluteTwist = Math.abs(displayAngleDegrees);
   const idleLimit = Z_TWIST_THRESHOLDS.neutralDeadZoneDegrees;
   const tooFastLimit = Z_TWIST_THRESHOLDS.tooFastMinAbsDegrees;
 
@@ -57,8 +60,8 @@ function getVisualAngle(status: TeaPouringStatus, zTwistDegrees: number | null):
   return 50 + Math.min(1, Math.max(0, tooFastRatio)) * 40;
 }
 
-function getPointerLeft(status: TeaPouringStatus, zTwistDegrees: number | null): number {
-  const visualAngle = getVisualAngle(status, zTwistDegrees);
+function getPointerLeft(status: TeaPouringStatus, displayAngleDegrees: number): number {
+  const visualAngle = getVisualAngle(status, displayAngleDegrees);
   return POINTER_MIN_LEFT + (visualAngle / 90) * (POINTER_MAX_LEFT - POINTER_MIN_LEFT);
 }
 
@@ -77,16 +80,16 @@ function StepIndicator() {
 }
 
 type AngleBarProps = {
+  displayAngleDegrees: number;
   status: TeaPouringStatus;
-  zTwistDegrees: number | null;
 };
 
-function AngleBar({ status, zTwistDegrees }: AngleBarProps) {
+function AngleBar({ displayAngleDegrees, status }: AngleBarProps) {
   return (
     <View style={styles.angleArea}>
       <Image
         source={screenAssets.pointer}
-        style={[styles.anglePointer, { left: getPointerLeft(status, zTwistDegrees) }]}
+        style={[styles.anglePointer, { left: getPointerLeft(status, displayAngleDegrees) }]}
       />
       <View style={styles.angleBar}>
         <View style={styles.idleRange} />
@@ -171,6 +174,10 @@ export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouring
   });
   const visibleStatus = sensorReady ? effectivePouring.status : "idle";
   const visibleDirection = sensorReady ? effectivePouring.direction : "neutral";
+  const displayAngleDegrees = getS5DisplayAngleDegrees({
+    direction: visibleDirection,
+    zTwistDegrees: pouring.zTwistDegrees,
+  });
   const { progress, completed } = useS5PouringProgress({
     status: visibleStatus,
     direction: visibleDirection,
@@ -200,7 +207,7 @@ export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouring
             {!sensorReady && (
               <Image source={screenAssets.calibrationIcon} style={styles.calibrationIcon} />
             )}
-            <AngleBar status={visibleStatus} zTwistDegrees={pouring.zTwistDegrees} />
+            <AngleBar displayAngleDegrees={displayAngleDegrees} status={visibleStatus} />
           </>
         )}
 
