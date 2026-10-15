@@ -1,5 +1,7 @@
 // 이 도메인의 공개 API
 
+export { TeaPouringScreen } from "./components/TeaPouringScreen";
+export type { TeaPouringScreenProps } from "./components/TeaPouringScreen";
 export { useTeaDrinking } from "./hooks/useTeaDrinking";
 export type {
   TeaDrinkingCalibrationStatus,
