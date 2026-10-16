@@ -11,14 +11,10 @@ import { StatusBar } from "expo-status-bar";
 import {
   BlurMask,
   Canvas,
-  Circle,
-  Group,
-  Image as SkiaImage,
-  LinearGradient,
+  ImageSVG,
   Oval,
-  Path,
   RadialGradient,
-  useImage,
+  useSVG,
   vec,
 } from "@shopify/react-native-skia";
 
@@ -40,18 +36,9 @@ const assets = {
   backgroundLayer2: require("@/assets/images/teaFlow/s5-background-layer-2.png"),
   backgroundLayer3: require("@/assets/images/teaFlow/s5-background-layer-3.png"),
   sensorIcon: require("@/assets/images/teaFlow/s3-sensor-icon.png"),
+  teaBag: require("@/assets/images/teaFlow/s3-tea-bag.svg"),
   teapot: require("@/assets/images/teaFlow/s3-teapot.png"),
 } as const;
-
-const TEA_BAG_WIDTH = 183;
-const TEA_BAG_HEIGHT = 299.5;
-const TEA_BAG_BODY_PATH =
-  "M36.5 27.511L0 81.511V299.5H183V81.511L144.5 27.5L36.5 27.511Z";
-const TEA_BAG_STRING_PATH =
-  "M92.0447 40.4897C97.5447 21.8231 114.532 -20.0053 144.045 12.4897C173.558 44.9848 10.5447 128.988 23.0447 160.988";
-const TEA_BAG_TAG_PATH =
-  "M12.6943 181.424C9.54941 173.76 13.213 164.998 20.8771 161.853L27.3532 159.195C35.0173 156.05 43.7797 159.714 46.9246 167.378L58.3131 195.132L24.0828 209.178L12.6943 181.424Z";
-const TEA_CONTENT_RECT = { x: 50.3, y: 97.4, width: 106.7, height: 131.2 } as const;
 
 export type TeaPreparationScreenProps = {
   onCompleted?: () => void;
@@ -78,67 +65,36 @@ type TeaBagProps = {
 
 const teaBagLayout = {
   1: {
-    shell: { left: 66, top: 122, width: 233.43, height: 270.71 },
+    content: { left: 130.24, top: 210.51, width: 136, height: 118.7 },
+    shell: { left: 66, top: 122, width: 233.428, height: 270.713 },
   },
   2: {
-    shell: { left: 105, top: 178, width: 185.14, height: 214.71 },
+    content: { left: 156, top: 248, width: 108, height: 94 },
+    shell: { left: 105, top: 178, width: 185.141, height: 214.713 },
   },
   3: {
+    content: { left: 162, top: 401, width: 84, height: 73 },
     shell: { left: 123.43, top: 346.91, width: 142.91, height: 165.74 },
   },
 } as const;
 
 function TeaBag({ stage, tea }: TeaBagProps) {
   const layout = teaBagLayout[stage];
-  const contentImage = useImage(tea.teaContentImage);
-  const scaleX = layout.shell.width / TEA_BAG_WIDTH;
-  const scaleY = layout.shell.height / TEA_BAG_HEIGHT;
+  const teaBagSvg = useSVG(assets.teaBag);
 
   return (
-    <Canvas style={[styles.teaBagCanvas, layout.shell]}>
-      <Group transform={[{ scaleX }, { scaleY }]}>
-        <Path path={TEA_BAG_BODY_PATH} color="rgba(217,217,217,0.2)" />
-        <Group clip={TEA_BAG_BODY_PATH}>
-          <SkiaImage
-            fit="fill"
-            height={TEA_CONTENT_RECT.height}
-            image={contentImage}
-            width={TEA_CONTENT_RECT.width}
-            x={TEA_CONTENT_RECT.x}
-            y={TEA_CONTENT_RECT.y}
-          />
-        </Group>
-        <Path path={TEA_BAG_BODY_PATH} color="rgba(217,217,217,0.2)" />
-        <Path path={TEA_BAG_BODY_PATH} opacity={0.2}>
-          <LinearGradient
-            colors={["rgba(0,0,0,0)", "#666666"]}
-            end={vec(91.5, 299.5)}
-            start={vec(92, 81.5)}
-          />
-        </Path>
-        <Path color="rgba(217,217,217,0.2)" path={TEA_BAG_TAG_PATH}>
-          <LinearGradient
-            colors={["rgba(0,0,0,0)", "rgba(102,102,102,0.2)"]}
-            end={vec(41.194, 202.157)}
-            start={vec(24.2087, 160.486)}
-          />
-        </Path>
-        <Path
-          color="#929292"
-          path={TEA_BAG_TAG_PATH}
-          style="stroke"
-          strokeWidth={0.5}
+    <>
+      <Image source={tea.teaContentImage} style={[styles.absoluteAsset, layout.content]} />
+      <Canvas style={[styles.teaBagCanvas, layout.shell]}>
+        <ImageSVG
+          height={layout.shell.height}
+          svg={teaBagSvg}
+          width={layout.shell.width}
+          x={0}
+          y={0}
         />
-        <Circle color="#d9d9d9" cx={92} cy={40.5} r={6.5} style="stroke" strokeWidth={1} />
-        <Path
-          color="#d9d9d9"
-          path={TEA_BAG_STRING_PATH}
-          strokeCap="round"
-          style="stroke"
-          strokeWidth={1}
-        />
-      </Group>
-    </Canvas>
+      </Canvas>
+    </>
   );
 }
 
