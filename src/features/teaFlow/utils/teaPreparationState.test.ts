@@ -26,14 +26,12 @@ describe("updateTeaPreparationState", () => {
     expect(confirmed.phase).toBe("sensorGuide");
   });
 
-  it.each(["sensor", "fallback"] as const)("%s 방식으로 tapping을 시작한다", (mode) => {
+  it("permission 결과와 무관한 화면 tapping 단계로 진행한다", () => {
     const tapping = updateTeaPreparationState(INITIAL_TEA_PREPARATION_STATE, {
       type: "startTapping",
-      mode,
     });
 
     expect(tapping.phase).toBe("tapping");
-    expect(tapping.interactionMode).toBe(mode);
   });
 
   it("3회 완료 후 completed로 전환한다", () => {

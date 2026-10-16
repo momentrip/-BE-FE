@@ -1,39 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useImpactShared } from "@/shared/sensors";
-import type { ImpactSensorStatus } from "@/shared/sensors";
-
 import { S3_TAP_SETTINGS } from "../constants/s3Preparation";
 import {
-  advanceTeaTapState,
+  advanceTeaTapCount,
   getTeaTapVisualStage,
-  INITIAL_TEA_TAP_STATE,
 } from "../utils/teaTapState";
-import type { TeaTapCount, TeaTapState } from "../utils/teaTapState";
+import type { TeaTapCount } from "../utils/teaTapState";
 
 type UseTeaTappingOptions = {
   enabled: boolean;
   onCompleted: () => void;
-  sensorEnabled: boolean;
 };
 
 export type TeaTappingState = {
   count: TeaTapCount;
-  registerFallbackTap: () => void;
-  requestPermission: () => Promise<boolean>;
-  sensorStatus: ImpactSensorStatus;
+  registerTap: () => void;
   visualStage: 1 | 2 | 3;
 };
 
 export function useTeaTapping({
   enabled,
   onCompleted,
-  sensorEnabled,
 }: UseTeaTappingOptions): TeaTappingState {
-  const { impactMagnitude, requestPermission, status: sensorStatus } = useImpactShared({
-    enabled: enabled && sensorEnabled,
-  });
-  const machineRef = useRef<TeaTapState>(INITIAL_TEA_TAP_STATE);
   const completedCallbackRef = useRef(onCompleted);
   const completionScheduledRef = useRef(false);
   const [count, setCount] = useState<TeaTapCount>(0);
@@ -42,53 +30,12 @@ export function useTeaTapping({
     completedCallbackRef.current = onCompleted;
   }, [onCompleted]);
 
-  useEffect(() => {
+  const registerTap = useCallback(() => {
     if (!enabled) {
-      machineRef.current = INITIAL_TEA_TAP_STATE;
-      completionScheduledRef.current = false;
       return;
     }
-
-    if (!sensorEnabled) {
-      return;
-    }
-
-    const timer = setInterval(() => {
-      const previous = machineRef.current;
-      const next = advanceTeaTapState({
-        previous,
-        impactMagnitude: impactMagnitude.value,
-        nowMs: Date.now(),
-      });
-      machineRef.current = next;
-
-      if (next.count !== previous.count) {
-        setCount(next.count);
-      }
-    }, S3_TAP_SETTINGS.pollIntervalMs);
-
-    return () => clearInterval(timer);
-  }, [enabled, impactMagnitude, sensorEnabled]);
-
-  const registerFallbackTap = useCallback(() => {
-    if (!enabled || sensorEnabled) {
-      return;
-    }
-
-    const nowMs = Date.now();
-    const released = advanceTeaTapState({
-      previous: machineRef.current,
-      impactMagnitude: S3_TAP_SETTINGS.releaseThresholdG,
-      nowMs,
-    });
-    const next = advanceTeaTapState({
-      previous: released,
-      impactMagnitude: S3_TAP_SETTINGS.impactThresholdG,
-      nowMs,
-    });
-    machineRef.current = next;
-    setCount(next.count);
-  }, [enabled, sensorEnabled]);
+    setCount((previous) => advanceTeaTapCount(previous));
+  }, [enabled]);
 
   useEffect(() => {
     if (count < S3_TAP_SETTINGS.targetCount || completionScheduledRef.current) {
@@ -105,9 +52,7 @@ export function useTeaTapping({
 
   return {
     count,
-    registerFallbackTap,
-    requestPermission,
-    sensorStatus,
+    registerTap,
     visualStage: getTeaTapVisualStage(count),
   };
 }

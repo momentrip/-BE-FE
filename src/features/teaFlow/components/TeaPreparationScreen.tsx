@@ -18,7 +18,9 @@ import {
 } from "@shopify/react-native-skia";
 
 import { fontFamily } from "@/shared/theme";
+import { useImpactShared } from "@/shared/sensors";
 
+import { S3_TEA_BAG_LAYOUT } from "../data/s3TeaBagLayout";
 import { S3_TEA_OPTIONS } from "../data/s3TeaOptions";
 import type { S3TeaDisplayData } from "../data/s3TeaOptions";
 import { useTeaTapping } from "../hooks/useTeaTapping";
@@ -62,20 +64,8 @@ type TeaBagProps = {
   tea: S3TeaDisplayData;
 };
 
-const teaBagLayout = {
-  1: {
-    shell: { left: 66, top: 122, width: 233.428, height: 270.713 },
-  },
-  2: {
-    shell: { left: 105, top: 178, width: 185.141, height: 214.713 },
-  },
-  3: {
-    shell: { left: 123.43, top: 346.91, width: 142.91, height: 165.74 },
-  },
-} as const;
-
 function TeaBag({ stage, tea }: TeaBagProps) {
-  const layout = teaBagLayout[stage];
+  const { rotationDegrees, ...shellLayout } = S3_TEA_BAG_LAYOUT[stage];
 
   return (
     <>
@@ -84,7 +74,15 @@ function TeaBag({ stage, tea }: TeaBagProps) {
         source={tea.teaContentImage}
         style={[styles.teaContentImage, tea.teaContentLayout[stage]]}
       />
-      <ExpoImage contentFit="fill" source={assets.teaBag} style={[styles.teaBagAsset, layout.shell]} />
+      <ExpoImage
+        contentFit="fill"
+        source={assets.teaBag}
+        style={[
+          styles.teaBagAsset,
+          shellLayout,
+          { transform: [{ rotate: `${rotationDegrees}deg` }] },
+        ]}
+      />
     </>
   );
 }
@@ -233,13 +231,13 @@ function SensorGuide({ onAllow, onFallback, requesting }: SensorGuideProps) {
 }
 
 type TappingVisualProps = {
-  fallback: boolean;
-  onFallbackTap: () => void;
+  enabled: boolean;
+  onTap: () => void;
   stage: 1 | 2 | 3;
   tea: S3TeaDisplayData;
 };
 
-function TappingVisual({ fallback, onFallbackTap, stage, tea }: TappingVisualProps) {
+function TappingVisual({ enabled, onTap, stage, tea }: TappingVisualProps) {
   const teapotLayout = stage === 1
     ? styles.teapotStage1
     : stage === 2
@@ -248,10 +246,10 @@ function TappingVisual({ fallback, onFallbackTap, stage, tea }: TappingVisualPro
 
   return (
     <Pressable
-      accessibilityHint={fallback ? "화면을 두드릴 때마다 다음 단계로 진행합니다" : undefined}
+      accessibilityHint="화면을 두드릴 때마다 다음 단계로 진행합니다"
       accessibilityLabel="찻잎 두드리기"
-      disabled={!fallback}
-      onPress={onFallbackTap}
+      disabled={!enabled}
+      onPress={onTap}
       style={StyleSheet.absoluteFill}
     >
       {stage >= 2 && (
@@ -283,6 +281,10 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
     updateTeaPreparationState,
     INITIAL_TEA_PREPARATION_STATE,
   );
+  const {
+    requestPermission,
+    status: permissionStatus,
+  } = useImpactShared({ enabled: false });
   const selectedTea = useMemo(
     () => S3_TEA_OPTIONS.find((tea) => tea.key === preparation.selectedTeaKey) ??
       S3_TEA_OPTIONS[0],
@@ -295,19 +297,16 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
   const tapping = useTeaTapping({
     enabled: preparation.phase === "tapping",
     onCompleted: handleCompleted,
-    sensorEnabled: preparation.interactionMode === "sensor",
   });
   const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
 
-  const startSensorTapping = useCallback(async () => {
-    const granted = await tapping.requestPermission();
-    if (granted) {
-      dispatch({ type: "startTapping", mode: "sensor" });
-    }
-  }, [tapping]);
+  const startTappingWithPermission = useCallback(async () => {
+    await requestPermission();
+    dispatch({ type: "startTapping" });
+  }, [requestPermission]);
 
-  const startFallbackTapping = useCallback(() => {
-    dispatch({ type: "startTapping", mode: "fallback" });
+  const startTappingWithoutPermission = useCallback(() => {
+    dispatch({ type: "startTapping" });
   }, []);
 
   const tappingVisible = preparation.phase === "tapping" || preparation.phase === "completed";
@@ -318,8 +317,8 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
       <View style={[styles.canvas, { transform: [{ scale }] }]}>
         {tappingVisible ? (
           <TappingVisual
-            fallback={preparation.interactionMode === "fallback" && preparation.phase === "tapping"}
-            onFallbackTap={tapping.registerFallbackTap}
+            enabled={preparation.phase === "tapping"}
+            onTap={tapping.registerTap}
             stage={tapping.visualStage}
             tea={selectedTea}
           />
@@ -342,9 +341,9 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
             )}
             {preparation.phase === "sensorGuide" && (
               <SensorGuide
-                onAllow={() => void startSensorTapping()}
-                onFallback={startFallbackTapping}
-                requesting={tapping.sensorStatus === "requesting"}
+                onAllow={() => void startTappingWithPermission()}
+                onFallback={startTappingWithoutPermission}
+                requesting={permissionStatus === "requesting"}
               />
             )}
           </>

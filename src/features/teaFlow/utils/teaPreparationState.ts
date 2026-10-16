@@ -6,10 +6,7 @@ export type TeaPreparationPhase =
   | "tapping"
   | "completed";
 
-export type TeaPreparationInteractionMode = "sensor" | "fallback" | null;
-
 export type TeaPreparationState = {
-  interactionMode: TeaPreparationInteractionMode;
   optionsOpen: boolean;
   phase: TeaPreparationPhase;
   selectedTeaKey: S3TeaDisplayData["key"];
@@ -20,11 +17,10 @@ export type TeaPreparationEvent =
   | { type: "closeOptions" }
   | { type: "selectTea"; teaKey: S3TeaDisplayData["key"] }
   | { type: "confirmTea" }
-  | { type: "startTapping"; mode: Exclude<TeaPreparationInteractionMode, null> }
+  | { type: "startTapping" }
   | { type: "complete" };
 
 export const INITIAL_TEA_PREPARATION_STATE: TeaPreparationState = {
-  interactionMode: null,
   optionsOpen: false,
   phase: "teaSelected",
   selectedTeaKey: "chrysanthemum",
@@ -44,7 +40,7 @@ export function updateTeaPreparationState(
     case "confirmTea":
       return { ...previous, optionsOpen: false, phase: "sensorGuide" };
     case "startTapping":
-      return { ...previous, interactionMode: event.mode, phase: "tapping" };
+      return { ...previous, phase: "tapping" };
     case "complete":
       return { ...previous, phase: "completed" };
   }
