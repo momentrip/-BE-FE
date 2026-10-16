@@ -48,5 +48,16 @@ describe("S3_TEA_OPTIONS", () => {
     expect(chrysanthemum.name).not.toBe(omija.name);
     expect(chrysanthemum.description).not.toBe(omija.description);
     expect(chrysanthemum.teaContentImage).not.toBe(omija.teaContentImage);
+    expect(chrysanthemum.glowColor).not.toEqual(omija.glowColor);
+    expect(chrysanthemum.glowColor).toEqual({
+      primary: "#FFE75E",
+      secondary: "#ECC218",
+      edge: "#745508",
+    });
+    expect(omija.glowColor).toEqual({
+      primary: "#EF5D62",
+      secondary: "#D9353F",
+      edge: "#6F1820",
+    });
   });
 });

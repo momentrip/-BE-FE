@@ -2,11 +2,18 @@ import type { ImageSourcePropType } from "react-native";
 
 export type S3TeaDisplayData = {
   description: string;
+  glowColor: S3TeaGlowColor;
   key: "chrysanthemum" | "omija";
   name: string;
   tags: readonly [string, string];
   teaContentImage: ImageSourcePropType;
   teaContentLayout: Record<1 | 2 | 3, S3TeaContentLayout>;
+};
+
+export type S3TeaGlowColor = {
+  edge: string;
+  primary: string;
+  secondary: string;
 };
 
 type S3TeaContentLayout = {
@@ -21,6 +28,11 @@ export const S3_TEA_OPTIONS: readonly S3TeaDisplayData[] = [
     key: "chrysanthemum",
     name: "국화차",
     description: "은은한 향이 긴장을 풀어줘요",
+    glowColor: {
+      primary: "#FFE75E",
+      secondary: "#ECC218",
+      edge: "#745508",
+    },
     tags: ["무카페인", "가을 제철"],
     teaContentImage: require("../../../../assets/images/teaFlow/s3-tea-content-chrysanthemum.png"),
     teaContentLayout: {
@@ -33,6 +45,12 @@ export const S3_TEA_OPTIONS: readonly S3TeaDisplayData[] = [
     key: "omija",
     name: "오미자차",
     description: "오미자의 붉은 달달함이 확신을 줘요",
+    // TODO: 추천 차 색상 contract 확정 후 실제 추천 데이터의 색상값으로 교체한다.
+    glowColor: {
+      primary: "#EF5D62",
+      secondary: "#D9353F",
+      edge: "#6F1820",
+    },
     tags: ["무카페인", "사계절"],
     teaContentImage: require("../../../../assets/images/teaFlow/s3-tea-content-omija.png"),
     teaContentLayout: {

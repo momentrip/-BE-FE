@@ -12,6 +12,7 @@ import { Image as ExpoImage } from "expo-image";
 import {
   BlurMask,
   Canvas,
+  Group,
   Oval,
   RadialGradient,
   vec,
@@ -22,7 +23,7 @@ import { useImpactShared } from "@/shared/sensors";
 
 import { S3_TEA_BAG_LAYOUT } from "../data/s3TeaBagLayout";
 import { S3_TEA_OPTIONS } from "../data/s3TeaOptions";
-import type { S3TeaDisplayData } from "../data/s3TeaOptions";
+import type { S3TeaDisplayData, S3TeaGlowColor } from "../data/s3TeaOptions";
 import { useTeaTapping } from "../hooks/useTeaTapping";
 import {
   INITIAL_TEA_PREPARATION_STATE,
@@ -88,10 +89,11 @@ function TeaBag({ stage, tea }: TeaBagProps) {
 }
 
 type TapGlowProps = {
+  color: S3TeaGlowColor;
   stage: 2 | 3;
 };
 
-function TapGlow({ stage }: TapGlowProps) {
+function TapGlow({ color, stage }: TapGlowProps) {
   const isSecondStage = stage === 2;
   const width = isSecondStage ? 254 : 353;
   const height = isSecondStage ? 251 : 348;
@@ -99,22 +101,24 @@ function TapGlow({ stage }: TapGlowProps) {
 
   return (
     <Canvas style={isSecondStage ? styles.glowStage2 : styles.glowStage3}>
-      <Oval
-        color={isSecondStage ? "rgba(255,231,94,0.13)" : undefined}
-        height={isSecondStage ? 151 : 248}
-        width={isSecondStage ? 154 : 253}
-        x={50}
-        y={50}
-      >
-        {!isSecondStage && (
-          <RadialGradient
-            c={center}
-            colors={["rgba(236,194,24,0.22)", "rgba(116,85,8,0.22)"]}
-            r={126.5}
-          />
-        )}
-        <BlurMask blur={25} style="normal" />
-      </Oval>
+      <Group opacity={isSecondStage ? 0.13 : 0.22}>
+        <Oval
+          color={isSecondStage ? color.primary : undefined}
+          height={isSecondStage ? 151 : 248}
+          width={isSecondStage ? 154 : 253}
+          x={50}
+          y={50}
+        >
+          {!isSecondStage && (
+            <RadialGradient
+              c={center}
+              colors={[color.secondary, color.edge]}
+              r={126.5}
+            />
+          )}
+          <BlurMask blur={25} style="normal" />
+        </Oval>
+      </Group>
     </Canvas>
   );
 }
@@ -260,7 +264,7 @@ function TappingVisual({ enabled, onTap, stage, tea }: TappingVisualProps) {
       )}
       <Image source={assets.backgroundLayer3} style={styles.backgroundLayer3} />
       <StepIndicator />
-      {(stage === 2 || stage === 3) && <TapGlow stage={stage} />}
+      {(stage === 2 || stage === 3) && <TapGlow color={tea.glowColor} stage={stage} />}
       <TeaBag stage={stage} tea={tea} />
       <Image source={assets.teapot} style={[styles.absoluteAsset, teapotLayout]} />
       <Text style={styles.tapInstruction}>찻잎을 두드려 다관에 넣으세요</Text>
