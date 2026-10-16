@@ -8,13 +8,12 @@ import {
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { Image as ExpoImage } from "expo-image";
 import {
   BlurMask,
   Canvas,
-  ImageSVG,
   Oval,
   RadialGradient,
-  useSVG,
   vec,
 } from "@shopify/react-native-skia";
 
@@ -80,20 +79,13 @@ const teaBagLayout = {
 
 function TeaBag({ stage, tea }: TeaBagProps) {
   const layout = teaBagLayout[stage];
-  const teaBagSvg = useSVG(assets.teaBag);
 
   return (
     <>
-      <Image source={tea.teaContentImage} style={[styles.absoluteAsset, layout.content]} />
-      <Canvas style={[styles.teaBagCanvas, layout.shell]}>
-        <ImageSVG
-          height={layout.shell.height}
-          svg={teaBagSvg}
-          width={layout.shell.width}
-          x={0}
-          y={0}
-        />
-      </Canvas>
+      <View style={[styles.teaContentClip, layout.content]}>
+        <Image source={tea.teaContentImage} style={styles.teaContentImage} />
+      </View>
+      <ExpoImage contentFit="fill" source={assets.teaBag} style={[styles.teaBagAsset, layout.shell]} />
     </>
   );
 }
@@ -378,7 +370,20 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   absoluteAsset: { position: "absolute", resizeMode: "stretch" },
-  teaBagCanvas: { position: "absolute" },
+  teaBagAsset: { position: "absolute" },
+  teaContentClip: {
+    position: "absolute",
+    overflow: "hidden",
+    borderRadius: 68,
+  },
+  teaContentImage: {
+    position: "absolute",
+    top: 0,
+    left: "-0.02%",
+    width: "100.04%",
+    height: "171.87%",
+    resizeMode: "stretch",
+  },
   backgroundLayer1: {
     position: "absolute",
     top: 0,
