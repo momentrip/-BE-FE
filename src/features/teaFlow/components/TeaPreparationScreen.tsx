@@ -8,6 +8,19 @@ import {
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import {
+  BlurMask,
+  Canvas,
+  Circle,
+  Group,
+  Image as SkiaImage,
+  LinearGradient,
+  Oval,
+  Path,
+  RadialGradient,
+  useImage,
+  vec,
+} from "@shopify/react-native-skia";
 
 import { fontFamily } from "@/shared/theme";
 
@@ -26,12 +39,19 @@ const assets = {
   backgroundLayer1: require("@/assets/images/teaFlow/s5-background-layer-1.png"),
   backgroundLayer2: require("@/assets/images/teaFlow/s5-background-layer-2.png"),
   backgroundLayer3: require("@/assets/images/teaFlow/s5-background-layer-3.png"),
-  glowStage2: require("@/assets/images/teaFlow/s3-glow-stage-2.png"),
-  glowStage3: require("@/assets/images/teaFlow/s3-glow-stage-3.png"),
   sensorIcon: require("@/assets/images/teaFlow/s3-sensor-icon.png"),
-  teaBagShell: require("@/assets/images/teaFlow/s3-tea-bag-shell.png"),
   teapot: require("@/assets/images/teaFlow/s3-teapot.png"),
 } as const;
+
+const TEA_BAG_WIDTH = 183;
+const TEA_BAG_HEIGHT = 299.5;
+const TEA_BAG_BODY_PATH =
+  "M36.5 27.511L0 81.511V299.5H183V81.511L144.5 27.5L36.5 27.511Z";
+const TEA_BAG_STRING_PATH =
+  "M92.0447 40.4897C97.5447 21.8231 114.532 -20.0053 144.045 12.4897C173.558 44.9848 10.5447 128.988 23.0447 160.988";
+const TEA_BAG_TAG_PATH =
+  "M12.6943 181.424C9.54941 173.76 13.213 164.998 20.8771 161.853L27.3532 159.195C35.0173 156.05 43.7797 159.714 46.9246 167.378L58.3131 195.132L24.0828 209.178L12.6943 181.424Z";
+const TEA_CONTENT_RECT = { x: 50.3, y: 97.4, width: 106.7, height: 131.2 } as const;
 
 export type TeaPreparationScreenProps = {
   onCompleted?: () => void;
@@ -58,27 +78,99 @@ type TeaBagProps = {
 
 const teaBagLayout = {
   1: {
-    content: { left: 130.24, top: 210.51, width: 136, height: 118.7 },
     shell: { left: 66, top: 122, width: 233.43, height: 270.71 },
   },
   2: {
-    content: { left: 156, top: 248, width: 108, height: 94 },
     shell: { left: 105, top: 178, width: 185.14, height: 214.71 },
   },
   3: {
-    content: { left: 162, top: 401, width: 84, height: 73 },
     shell: { left: 123.43, top: 346.91, width: 142.91, height: 165.74 },
   },
 } as const;
 
 function TeaBag({ stage, tea }: TeaBagProps) {
   const layout = teaBagLayout[stage];
+  const contentImage = useImage(tea.teaContentImage);
+  const scaleX = layout.shell.width / TEA_BAG_WIDTH;
+  const scaleY = layout.shell.height / TEA_BAG_HEIGHT;
 
   return (
-    <>
-      <Image source={tea.teaContentImage} style={[styles.absoluteAsset, layout.content]} />
-      <Image source={assets.teaBagShell} style={[styles.absoluteAsset, layout.shell]} />
-    </>
+    <Canvas style={[styles.teaBagCanvas, layout.shell]}>
+      <Group transform={[{ scaleX }, { scaleY }]}>
+        <Path path={TEA_BAG_BODY_PATH} color="rgba(217,217,217,0.2)" />
+        <Group clip={TEA_BAG_BODY_PATH}>
+          <SkiaImage
+            fit="fill"
+            height={TEA_CONTENT_RECT.height}
+            image={contentImage}
+            width={TEA_CONTENT_RECT.width}
+            x={TEA_CONTENT_RECT.x}
+            y={TEA_CONTENT_RECT.y}
+          />
+        </Group>
+        <Path path={TEA_BAG_BODY_PATH} color="rgba(217,217,217,0.2)" />
+        <Path path={TEA_BAG_BODY_PATH} opacity={0.2}>
+          <LinearGradient
+            colors={["rgba(0,0,0,0)", "#666666"]}
+            end={vec(91.5, 299.5)}
+            start={vec(92, 81.5)}
+          />
+        </Path>
+        <Path color="rgba(217,217,217,0.2)" path={TEA_BAG_TAG_PATH}>
+          <LinearGradient
+            colors={["rgba(0,0,0,0)", "rgba(102,102,102,0.2)"]}
+            end={vec(41.194, 202.157)}
+            start={vec(24.2087, 160.486)}
+          />
+        </Path>
+        <Path
+          color="#929292"
+          path={TEA_BAG_TAG_PATH}
+          style="stroke"
+          strokeWidth={0.5}
+        />
+        <Circle color="#d9d9d9" cx={92} cy={40.5} r={6.5} style="stroke" strokeWidth={1} />
+        <Path
+          color="#d9d9d9"
+          path={TEA_BAG_STRING_PATH}
+          strokeCap="round"
+          style="stroke"
+          strokeWidth={1}
+        />
+      </Group>
+    </Canvas>
+  );
+}
+
+type TapGlowProps = {
+  stage: 2 | 3;
+};
+
+function TapGlow({ stage }: TapGlowProps) {
+  const isSecondStage = stage === 2;
+  const width = isSecondStage ? 254 : 353;
+  const height = isSecondStage ? 251 : 348;
+  const center = vec(width / 2, height / 2);
+
+  return (
+    <Canvas style={isSecondStage ? styles.glowStage2 : styles.glowStage3}>
+      <Oval
+        color={isSecondStage ? "rgba(255,231,94,0.13)" : undefined}
+        height={isSecondStage ? 151 : 248}
+        width={isSecondStage ? 154 : 253}
+        x={50}
+        y={50}
+      >
+        {!isSecondStage && (
+          <RadialGradient
+            c={center}
+            colors={["rgba(236,194,24,0.22)", "rgba(116,85,8,0.22)"]}
+            r={126.5}
+          />
+        )}
+        <BlurMask blur={25} style="normal" />
+      </Oval>
+    </Canvas>
   );
 }
 
@@ -223,8 +315,7 @@ function TappingVisual({ fallback, onFallbackTap, stage, tea }: TappingVisualPro
       )}
       <Image source={assets.backgroundLayer3} style={styles.backgroundLayer3} />
       <StepIndicator />
-      {stage === 2 && <Image source={assets.glowStage2} style={styles.glowStage2} />}
-      {stage === 3 && <Image source={assets.glowStage3} style={styles.glowStage3} />}
+      {(stage === 2 || stage === 3) && <TapGlow stage={stage} />}
       <TeaBag stage={stage} tea={tea} />
       <Image source={assets.teapot} style={[styles.absoluteAsset, teapotLayout]} />
       <Text style={styles.tapInstruction}>찻잎을 두드려 다관에 넣으세요</Text>
@@ -331,6 +422,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   absoluteAsset: { position: "absolute", resizeMode: "stretch" },
+  teaBagCanvas: { position: "absolute" },
   backgroundLayer1: {
     position: "absolute",
     top: 0,

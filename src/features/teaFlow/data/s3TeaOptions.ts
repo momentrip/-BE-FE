@@ -1,11 +1,9 @@
-import type { ImageSourcePropType } from "react-native";
-
 export type S3TeaDisplayData = {
   description: string;
   key: "chrysanthemum" | "omija";
   name: string;
   tags: readonly [string, string];
-  teaContentImage: ImageSourcePropType;
+  teaContentImage: number;
 };
 
 export const S3_TEA_OPTIONS: readonly S3TeaDisplayData[] = [
