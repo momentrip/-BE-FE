@@ -64,15 +64,12 @@ type TeaBagProps = {
 
 const teaBagLayout = {
   1: {
-    content: { left: 130.24, top: 210.51, width: 136, height: 118.7 },
     shell: { left: 66, top: 122, width: 233.428, height: 270.713 },
   },
   2: {
-    content: { left: 156, top: 248, width: 108, height: 94 },
     shell: { left: 105, top: 178, width: 185.141, height: 214.713 },
   },
   3: {
-    content: { left: 162, top: 401, width: 84, height: 73 },
     shell: { left: 123.43, top: 346.91, width: 142.91, height: 165.74 },
   },
 } as const;
@@ -82,9 +79,11 @@ function TeaBag({ stage, tea }: TeaBagProps) {
 
   return (
     <>
-      <View style={[styles.teaContentClip, layout.content]}>
-        <Image source={tea.teaContentImage} style={styles.teaContentImage} />
-      </View>
+      <Image
+        resizeMode="contain"
+        source={tea.teaContentImage}
+        style={[styles.teaContentImage, tea.teaContentLayout[stage]]}
+      />
       <ExpoImage contentFit="fill" source={assets.teaBag} style={[styles.teaBagAsset, layout.shell]} />
     </>
   );
@@ -371,18 +370,8 @@ const styles = StyleSheet.create({
   },
   absoluteAsset: { position: "absolute", resizeMode: "stretch" },
   teaBagAsset: { position: "absolute" },
-  teaContentClip: {
-    position: "absolute",
-    overflow: "hidden",
-    borderRadius: 68,
-  },
   teaContentImage: {
     position: "absolute",
-    top: 0,
-    left: "-0.02%",
-    width: "100.04%",
-    height: "171.87%",
-    resizeMode: "stretch",
   },
   backgroundLayer1: {
     position: "absolute",
