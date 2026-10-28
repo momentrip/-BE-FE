@@ -12,6 +12,8 @@ export const fontFamily = {
   pretendardBold: 'Pretendard-Bold',
   pretendardExtraBold: 'Pretendard-ExtraBold',
   pretendardBlack: 'Pretendard-Black',
+  main: 'YleeMortalHeartImmortalMemory',
+  sub1: 'GriunGellyroll',
 } as const;
 
 export type FontFamily = (typeof fontFamily)[keyof typeof fontFamily];
@@ -30,6 +32,6 @@ export const fontAssets = {
   [fontFamily.pretendardBold]: require('@/assets/fonts/Pretendard-1.3.9/public/static/Pretendard-Bold.otf'),
   [fontFamily.pretendardExtraBold]: require('@/assets/fonts/Pretendard-1.3.9/public/static/Pretendard-ExtraBold.otf'),
   [fontFamily.pretendardBlack]: require('@/assets/fonts/Pretendard-1.3.9/public/static/Pretendard-Black.otf'),
+  [fontFamily.main]: require('@/assets/fonts/YleeMortalHeartImmortalMemory.ttf'),
+  [fontFamily.sub1]: require('@/assets/fonts/Griun_Gellyroll-Rg.ttf'),
 } as const;
-
-// 메인, 서브1 폰트는 미확정
