@@ -14,3 +14,4 @@ export type {
   TeaPouringCalibrationStatus,
   TeaPouringState,
 } from "./hooks/useTeaPouring";
+export { getTeaLabel } from "./utils/getTeaLabel";
