@@ -49,31 +49,36 @@
 
 ## 3. 폴더 구조
 
-기준: **앱 흐름의 단계 하나 = 도메인 하나.** 여러 도메인이 같이 쓰는 것만 `shared/`에 둔다.
+기준: **화면(작업 단위) 하나 = 도메인 하나.** 화면이 없는 공용 데이터·판단 로직(`session`, `safety`, `quote`)도 도메인으로 두고, 화면 도메인에 함수로 제공한다. 여러 도메인이 같이 쓰는 것만 `shared/`에 둔다.
 
 ```
 src/
-  app/                # expo-router 화면과 흐름 순서. 도메인 컴포넌트를 조합만 한다 (로직 금지)
+  app/                # expo-router 라우팅만. 도메인 컴포넌트를 조합만 한다 (로직 금지)
   features/
+    home/             # 메인 화면 + 풍등 (오늘 풍등 수, 다른 사용자 풍등 실시간 피드)
     worry/            # 고민 적기
-    lantern/          # 풍등 날리기 + 다른 사용자 풍등 실시간 피드
-    tea/              # 차 따르기 + 차 마시기 (액체 렌더링 공유)
-    meditation/       # 명상하기
-    quote/            # 명언 데이터 + 추천 알고리즘 + 번뇌 종류 자동 매칭 + 명언 화면
-    session/          # 이번 회차 데이터(고민·차·명언) 보관 및 로컬 저장
-    history/          # 내 기록 보기 (로컬)
-    safety/           # 위기 감지 + 상담 전화 안내
+    teaFlow/          # 차 따르기 + 차 마시기 (액체 렌더링 공유)
+    zen/              # 명상하기 (찻잔 바닥의 선어 확인)
+    collection/       # 찻잔 도감 = 내 기록 보기 (로컬, 조회 함수는 session이 제공)
+    session/          # [화면 없음] 이번 회차 데이터(고민·차·명언) 보관 및 로컬 저장·조회
+    safety/           # [화면 없음] 위기 감지 + 109 안내 판단
+    quote/            # [화면 없음] 명언 데이터 + 추천 알고리즘 + 번뇌 종류 자동 매칭
   shared/
-    sensors/          # useTilt 등 기울기 센서 (유일한 센서 구독 지점)
+    sensors/          # useTiltShared 등 기울기 센서 (유일한 센서 구독 지점)
     theme/            # 디자인 토큰: colors, typography, spacing, radius
-    ui/               # 도메인과 무관한 공용 컴포넌트
+    ui/               # 도메인과 무관한 범용 UI (Button, Modal 등)
+    components/       # 두 개 이상 화면에서 똑같이 쓰는 앱 공통 컴포넌트 (풍등, 찻잔 등)
+    hooks/            # 두 개 이상 도메인에서 쓰는 공용 훅
     lib/              # supabase.ts, 로컬 DB 연결 (유일한 생성 지점)
     constants/        # 여러 도메인이 같이 쓰는 고정 값 (번뇌 종류 id·묶음·표시 이름 등)
 supabase/
   migrations/         # 스키마 변경 SQL
 ```
 
-각 도메인 폴더 내부:
+- 처음에는 해당 도메인 안에 구현하고, 실제로 두 개 이상 화면에서 쓰이게 되면 그때 `shared/components`·`shared/hooks`로 옮긴다.
+- 화면 route 파일은 미리 만들지 않고, 각 담당자가 화면을 구현할 때 `src/app/`에 추가한다.
+
+각 도메인 폴더 내부 (필요한 것만 만든다):
 
 ```
 src/features/<domain>/
@@ -81,8 +86,9 @@ src/features/<domain>/
   types.ts
   components/
   hooks/
-  logic/          # 순수 함수
+  utils/          # 순수 함수 (+ 같은 위치에 *.test.ts)
   api/            # Supabase·로컬 DB 호출 (필요한 도메인만)
+  data/           # 고정 데이터 파일 (quote의 명언 목록 등)
 ```
 
 ---
@@ -91,7 +97,7 @@ src/features/<domain>/
 
 1. 다른 도메인은 `@/features/<domain>`(= `index.ts`)으로만 import한다.
    - 허용: `import { saveWorry } from '@/features/session';`
-   - 금지: `import { x } from '@/features/session/logic/store';`
+   - 금지: `import { x } from '@/features/session/utils/store';`
 2. 같은 도메인 내부에서는 상대 경로로 import한다.
 3. 의존 방향은 `app → features → shared` 한 방향. `shared`는 `features`를 import할 수 없다.
 4. 도메인 간 순환 import 금지.
@@ -157,13 +163,13 @@ export function saveWorry(text: string, kind: WorryKind): void { ... }
 
 | 담당 | 도메인 |
 |---|---|
-| 신연아 | `tea`, `shared/sensors` |
-| 노희윤 | `worry`, `lantern`, `meditation` |
-| 박세인 | `session`, `history`, `safety`, `supabase/`, `shared/lib`, `shared/constants` |
+| 신연아 | `teaFlow`, `shared/sensors` |
+| 노희윤 | `home`, `worry`, `zen`, `collection` |
+| 박세인 | `session`, `safety`, `supabase/`, `shared/lib`, `shared/constants` |
 | 유민아 | `quote` (`quote/data`는 C도 수정 가능) |
 
-- `src/app/`(화면 순서)과 `shared/theme`, `shared/ui`는 수정 시 PR에 PM을 리뷰어로 지정한다.
-- 알고리즘 로직(`features/quote/logic`: 명언 추천, 번뇌 종류 자동 매칭)은 D만 작성한다.
+- `src/app/`(라우팅)과 `shared/theme`, `shared/ui`, `shared/components`, `shared/hooks`는 수정 시 PR에 PM을 리뷰어로 지정한다.
+- 알고리즘 로직(`features/quote/utils`: 명언 추천, 번뇌 종류 자동 매칭)은 D만 작성한다.
 
 ---
 
@@ -204,7 +210,7 @@ export function saveWorry(text: string, kind: WorryKind): void { ... }
 - 화면에 띄울 풍등 수는 **오늘(기기 시간대 자정 이후)** 날린 `lanterns` 행 개수다. 누적 개수는 쓰지 않는다. 화면 진입 시 오늘 개수를 한 번 조회하고, INSERT 이벤트마다 +1 하며, 자정이 지나면 다시 조회한다.
 - 다른 사용자의 풍등은 `lanterns` INSERT 구독으로 실시간 피드("n분 전 · 불안·걱정 · 캐모마일")로 보여준다.
 - 오늘 차를 마셨는지는 로컬 `my_records`에 오늘(기기 시간대 자정 이후) 기록이 있는지로 판단한다. 별도 컬럼이나 테이블을 두지 않는다.
-- `tea` 값은 `tea` 도메인이 정한 차 id를 그대로 쓴다. 차 이름 등 화면 표시는 앱 코드에서 id로 찾는다.
+- `tea` 값은 `teaFlow` 도메인이 정한 차 id를 그대로 쓴다. 차 이름 등 화면 표시는 앱 코드에서 id로 찾는다.
 - 번뇌 종류 `worry_kind` id는 아래 8개다. 탐·진·치 묶음 매핑과 화면 표시 이름은 `src/shared/constants`의 상수 한 곳에서만 관리한다.
   - 탐: `greed_impatience`, `wavering_temptation`
   - 진: `relationship_anger`, `selfblame_lethargy`
@@ -227,7 +233,7 @@ export function saveWorry(text: string, kind: WorryKind): void { ... }
 - 결과가 비는 경우가 없어야 한다. 항상 기본 명언 fallback을 둔다.
 - 위기 상황으로 판단된 입력에는 무겁거나 어두운 명언을 고르지 않는다 (`safety`와 기준 공유).
 - 명언 데이터에는 출처와 말한 사람을 기록하고, 저작권 문제가 없는 문구만 사용한다.
-- `logic/`의 함수는 jest 단위 테스트를 작성한다.
+- `utils/`의 함수는 jest 단위 테스트를 작성한다.
 
 ### 번뇌 종류 자동 매칭
 
@@ -251,7 +257,7 @@ export function saveWorry(text: string, kind: WorryKind): void { ... }
 ## 12. Git 규칙
 
 - `main` 직접 push 금지. PR + 리뷰 1명 이상 + squash merge.
-- 브랜치명: `feat/<domain>-<설명>`, `fix/<domain>-<설명>` (예: `feat/tea-pour-wave`)
+- 브랜치명: `feat/<domain>-<설명>`, `fix/<domain>-<설명>` (예: `feat/teaFlow-pour-wave`)
 - 커밋 메시지: `feat:`, `fix:`, `refactor:`, `style:`, `chore:`, `docs:`, `test:` + 한국어 설명
 - **PR 하나는 도메인 하나만 수정한다.** (협의로 만든 공개 함수 추가는 그 도메인 담당자의 PR로 올린다)
 - UI 변경 PR에는 실기기 스크린샷/영상을 첨부한다.
