@@ -2,14 +2,21 @@ import type { WorryKind } from '@/shared/constants';
 import { detectCrisis } from '@/features/safety';
 import type { CurrentSession } from '../types';
 
-// 이번 회차 값은 saveSession 전까지 메모리에만 둔다.
-let current: CurrentSession = {
+const EMPTY_SESSION: CurrentSession = {
   worryText: null,
   worryKind: null,
   isCrisis: false,
   tea: null,
   quoteId: null,
 };
+
+// 이번 회차 값은 saveSession 전까지 메모리에만 둔다.
+let current: CurrentSession = { ...EMPTY_SESSION };
+
+// saveSession이 저장을 마친 뒤 다음 회차를 위해 비운다. 도메인 내부 전용 (index.ts로 공개하지 않는다).
+export function resetCurrentSession(): void {
+  current = { ...EMPTY_SESSION };
+}
 
 /**
  * 이번 회차에 적은 고민을 저장한다. 새 회차의 시작이라 이전에 저장된 차·명언은 비운다.
