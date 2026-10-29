@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { matchWorryKind } from './matchWorryKind';
+import { matchWorryKind, removeSpaces } from './matchWorryKind';
+import { WORRY_CASES } from './worryCases';
 import { WORRY_KEYWORDS, WORRY_KIND_PRIORITY } from './worryKeywords';
 
 describe('matchWorryKind', () => {
@@ -40,5 +41,38 @@ describe('matchWorryKind', () => {
 
   it('키워드 표의 모든 종류가 우선순위 목록에 있다', () => {
     expect([...WORRY_KIND_PRIORITY].sort()).toEqual(Object.keys(WORRY_KEYWORDS).sort());
+  });
+
+  it('한 종류 안에 띄어쓰기만 다른 키워드가 없다 (한 표현이 2점이 되지 않도록)', () => {
+    for (const keywords of Object.values(WORRY_KEYWORDS)) {
+      const compact = keywords.map(removeSpaces);
+      expect(new Set(compact).size).toBe(compact.length);
+    }
+  });
+
+  it('띄어쓰기를 무시하고 비교한다', () => {
+    expect(matchWorryKind('잡생각때문에잠이안와')).toBe('overthinking');
+    expect(matchWorryKind('하 기 싫 어')).toBe('selfblame_lethargy');
+  });
+
+  it.each([
+    ['기술을 배워야 할지 모르겠어'], // '술을'
+    ['수술을 앞두고 있어'], // '술을'
+    ['영화가 재밌었어'], // '화가'
+    ['나만의 시간이 필요해'], // '나만'
+  ])('짧은 키워드가 다른 단어에 잘못 걸리지 않는다: "%s" → unsure', (text) => {
+    expect(matchWorryKind(text)).toBe('unsure');
+  });
+});
+
+describe('matchWorryKind 고민 문장 모음', () => {
+  it.each(WORRY_CASES)('"%s" → %s', (text, expected) => {
+    expect(matchWorryKind(text)).toBe(expected);
+  });
+
+  it('붙여 써도 같은 결과가 나온다', () => {
+    for (const [text, expected] of WORRY_CASES) {
+      expect(matchWorryKind(removeSpaces(text))).toBe(expected);
+    }
   });
 });
