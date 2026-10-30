@@ -34,7 +34,7 @@ describe("updateTeaPreparationState", () => {
     expect(tapping.phase).toBe("tapping");
   });
 
-  it("3회 완료 후 completed로 전환한다", () => {
+  it("탭 애니메이션 완료 후 completed로 전환한다", () => {
     expect(updateTeaPreparationState(INITIAL_TEA_PREPARATION_STATE, {
       type: "complete",
     }).phase).toBe("completed");

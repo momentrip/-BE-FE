@@ -1,6 +1,15 @@
-import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useCallback, useEffect, useRef } from "react";
+import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { StyleProp, ViewStyle } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import {
   Canvas,
   Group,
@@ -16,6 +25,11 @@ import { fontFamily } from "@/shared/theme";
 import { S5_CUP_COLORS, S5_DEFAULT_TEA_COLOR } from "../constants/s5Pouring";
 import { useS5PouringProgress } from "../hooks/useS5PouringProgress";
 import { useTeaPouring } from "../hooks/useTeaPouring";
+import {
+  INITIAL_COMPLETED_DOUBLE_TAP_STATE,
+  registerCompletedTap,
+} from "../utils/completedDoubleTap";
+import type { CompletedDoubleTapState } from "../utils/completedDoubleTap";
 import { Z_TWIST_THRESHOLDS } from "../utils/pouringThresholds";
 import {
   getS5DisplayAngleDegrees,
@@ -32,6 +46,8 @@ const POINTER_WIDTH = 26;
 const POINTER_EDGE_PADDING = 1;
 const POINTER_MIN_LEFT = 57;
 const POINTER_MAX_LEFT = ANGLE_BAR_LEFT + ANGLE_BAR_WIDTH - POINTER_WIDTH / 2;
+const COMPLETED_DOUBLE_TAP_INTERVAL_MS = 300;
+const COMPLETED_HINT_BLINK_DURATION_MS = 700;
 
 const screenAssets = {
   backgroundLayer1: require("@/assets/images/teaFlow/s5-background-layer-1.png"),
@@ -227,16 +243,26 @@ function CompletedVisual({ teaColor }: CompletedVisualProps) {
 export type TeaPouringScreenProps = {
   /** 추천된 차의 액체 표시 색상. Tea 데이터가 연결되면 해당 색상만 전달한다. */
   teaColor?: string;
+  /** 완료 화면에서 사용자가 두 번 빠르게 탭했을 때 호출한다. */
+  onCompleted?: () => void;
 };
 
 /**
  * Figma S5 차 따르기 화면을 센서 상태 및 화면 전용 진행도와 연결한다.
  * @param teaColor 찻잔의 액체 표면 색상. 생략하면 Figma 기준 기본색을 사용한다.
+ * @param onCompleted 완료 화면에서 더블탭했을 때 실행할 다음 단계 callback
  * @returns S5 idle/pouring/tooFast/completed 화면
  * 사용처: src/app/tea-pouring.tsx
  */
-export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouringScreenProps) {
+export function TeaPouringScreen({
+  onCompleted,
+  teaColor = S5_DEFAULT_TEA_COLOR,
+}: TeaPouringScreenProps) {
   const { width, height } = useWindowDimensions();
+  const completedTapRef = useRef<CompletedDoubleTapState>({
+    ...INITIAL_COMPLETED_DOUBLE_TAP_STATE,
+  });
+  const completedHintOpacity = useSharedValue(1);
   const pouring = useTeaPouring();
   const sensorReady = pouring.calibrationStatus === "ready";
   const effectivePouring = getS5EffectivePouringState({
@@ -256,9 +282,43 @@ export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouring
   });
   const showCompleted = completed || progress >= 1;
   const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+  const completedHintStyle = useAnimatedStyle(() => ({
+    opacity: completedHintOpacity.value,
+  }));
+
+  useEffect(() => {
+    if (!showCompleted) {
+      completedHintOpacity.set(1);
+      return;
+    }
+
+    completedHintOpacity.set(withRepeat(
+      withTiming(0.25, {
+        duration: COMPLETED_HINT_BLINK_DURATION_MS,
+        easing: Easing.inOut(Easing.ease),
+      }),
+      -1,
+      true,
+    ));
+
+    return () => cancelAnimation(completedHintOpacity);
+  }, [completedHintOpacity, showCompleted]);
+
+  const handleScreenPress = useCallback(() => {
+    const result = registerCompletedTap({
+      completed: showCompleted,
+      maxIntervalMs: COMPLETED_DOUBLE_TAP_INTERVAL_MS,
+      nowMs: Date.now(),
+      previous: completedTapRef.current,
+    });
+    completedTapRef.current = result.next;
+    if (result.shouldComplete) {
+      onCompleted?.();
+    }
+  }, [onCompleted, showCompleted]);
 
   return (
-    <View style={styles.screen}>
+    <Pressable onPress={handleScreenPress} style={styles.screen}>
       <StatusBar hidden />
       <View style={[styles.canvas, { transform: [{ scale }] }]}>
         <Image source={screenAssets.backgroundLayer1} style={styles.background} />
@@ -286,10 +346,13 @@ export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouring
           style={[styles.stateLayer, !showCompleted && styles.hiddenStateLayer]}
         >
           <CompletedVisual teaColor={teaColor} />
+          <Animated.Text style={[styles.completedHint, completedHintStyle]}>
+            준비되면 화면을 두번 두드려요
+          </Animated.Text>
         </View>
 
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -549,6 +612,17 @@ const styles = StyleSheet.create({
   },
   completedSubtitle: {
     marginTop: 3,
+    color: "#a0a0a0",
+    fontFamily: fontFamily.pretendardSemiBold,
+    fontSize: 13,
+    lineHeight: 20.8,
+    textAlign: "center",
+  },
+  completedHint: {
+    position: "absolute",
+    top: 690,
+    left: 24,
+    width: 342,
     color: "#a0a0a0",
     fontFamily: fontFamily.pretendardSemiBold,
     fontSize: 13,
