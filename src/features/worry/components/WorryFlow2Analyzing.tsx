@@ -36,7 +36,7 @@ export function WorryFlow2Analyzing({
       <Text style={styles.analyzingMessage}>작성해주신 번뇌를{"\n"}분석 중이에요</Text>
 
       <Image source={screenAssets.chip} style={styles.chipImage} resizeMode="cover" />
-      <Text style={styles.chipText} numberOfLines={4}>
+      <Text style={styles.chipText} numberOfLines={6}>
         {worryText}
       </Text>
 

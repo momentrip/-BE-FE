@@ -37,7 +37,7 @@ export function WorryResultCard({ worryText }: { worryText: string }) {
   return (
     <View style={styles.resultCard}>
       <Image source={cardAssets.lit2} style={styles.resultCardImage} resizeMode="cover" />
-      <Text style={styles.resultCardText} numberOfLines={4}>
+      <Text style={styles.resultCardText} numberOfLines={6}>
         {worryText}
       </Text>
     </View>
