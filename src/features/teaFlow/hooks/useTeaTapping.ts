@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { S3_TAP_SETTINGS } from "../constants/s3Preparation";
 import {
-  advanceTeaTapCount,
-  getTeaTapVisualStage,
+  completeTeaTapAnimation,
+  INITIAL_TEA_TAP_ANIMATION_STATE,
+  startTeaTapAnimation,
 } from "../utils/teaTapState";
-import type { TeaTapCount } from "../utils/teaTapState";
+import type { TeaTapAnimationState } from "../utils/teaTapState";
 
 type UseTeaTappingOptions = {
   enabled: boolean;
@@ -13,9 +14,9 @@ type UseTeaTappingOptions = {
 };
 
 export type TeaTappingState = {
-  count: TeaTapCount;
+  animationStarted: boolean;
+  completeAnimation: () => void;
   registerTap: () => void;
-  visualStage: 1 | 2 | 3;
 };
 
 export function useTeaTapping({
@@ -24,7 +25,11 @@ export function useTeaTapping({
 }: UseTeaTappingOptions): TeaTappingState {
   const completedCallbackRef = useRef(onCompleted);
   const completionScheduledRef = useRef(false);
-  const [count, setCount] = useState<TeaTapCount>(0);
+  const animationRef = useRef<TeaTapAnimationState>(
+    INITIAL_TEA_TAP_ANIMATION_STATE,
+  );
+  const [animationStarted, setAnimationStarted] = useState(false);
+  const [animationCompleted, setAnimationCompleted] = useState(false);
 
   useEffect(() => {
     completedCallbackRef.current = onCompleted;
@@ -34,11 +39,28 @@ export function useTeaTapping({
     if (!enabled) {
       return;
     }
-    setCount((previous) => advanceTeaTapCount(previous));
+
+    const next = startTeaTapAnimation(animationRef.current);
+    if (next === animationRef.current) {
+      return;
+    }
+
+    animationRef.current = next;
+    setAnimationStarted(true);
   }, [enabled]);
 
+  const completeAnimation = useCallback(() => {
+    const next = completeTeaTapAnimation(animationRef.current);
+    if (next === animationRef.current) {
+      return;
+    }
+
+    animationRef.current = next;
+    setAnimationCompleted(true);
+  }, []);
+
   useEffect(() => {
-    if (count < S3_TAP_SETTINGS.targetCount || completionScheduledRef.current) {
+    if (!animationCompleted || completionScheduledRef.current) {
       return;
     }
 
@@ -48,11 +70,11 @@ export function useTeaTapping({
     }, S3_TAP_SETTINGS.completedStageDurationMs);
 
     return () => clearTimeout(timer);
-  }, [count]);
+  }, [animationCompleted]);
 
   return {
-    count,
+    animationStarted,
+    completeAnimation,
     registerTap,
-    visualStage: getTeaTapVisualStage(count),
   };
 }

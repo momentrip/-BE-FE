@@ -1,14 +1,25 @@
-import { S3_TAP_SETTINGS } from "../constants/s3Preparation";
+export type TeaTapAnimationState = {
+  phase: "idle" | "animating" | "completed";
+};
 
-export type TeaTapCount = 0 | 1 | 2 | 3;
+export const INITIAL_TEA_TAP_ANIMATION_STATE: TeaTapAnimationState = {
+  phase: "idle",
+};
 
-export function advanceTeaTapCount(previous: TeaTapCount): TeaTapCount {
-  if (previous >= S3_TAP_SETTINGS.targetCount) {
+export function startTeaTapAnimation(
+  previous: TeaTapAnimationState,
+): TeaTapAnimationState {
+  if (previous.phase !== "idle") {
     return previous;
   }
-  return Math.min(S3_TAP_SETTINGS.targetCount, previous + 1) as TeaTapCount;
+  return { ...previous, phase: "animating" };
 }
 
-export function getTeaTapVisualStage(count: TeaTapCount): 1 | 2 | 3 {
-  return Math.min(3, count + 1) as 1 | 2 | 3;
+export function completeTeaTapAnimation(
+  previous: TeaTapAnimationState,
+): TeaTapAnimationState {
+  if (previous.phase !== "animating") {
+    return previous;
+  }
+  return { phase: "completed" };
 }
