@@ -1,31 +1,33 @@
 import { describe, expect, it } from "@jest/globals";
 
 import {
-  advanceTeaTapCount,
-  getTeaTapVisualStage,
+  completeTeaTapAnimation,
+  INITIAL_TEA_TAP_ANIMATION_STATE,
+  startTeaTapAnimation,
 } from "./teaTapState";
 
-describe("advanceTeaTapCount", () => {
-  it("화면을 누를 때마다 한 단계씩 최대 3회 센다", () => {
-    const firstTap = advanceTeaTapCount(0);
-    const secondTap = advanceTeaTapCount(firstTap);
-    const thirdTap = advanceTeaTapCount(secondTap);
+describe("tea tap animation", () => {
+  it("초기 상태는 stage 1이며 최초 tap으로 애니메이션을 시작한다", () => {
+    expect(INITIAL_TEA_TAP_ANIMATION_STATE).toEqual({ phase: "idle" });
 
-    expect(firstTap).toBe(1);
-    expect(secondTap).toBe(2);
-    expect(thirdTap).toBe(3);
+    expect(startTeaTapAnimation(INITIAL_TEA_TAP_ANIMATION_STATE)).toEqual({
+      phase: "animating",
+    });
   });
 
-  it("3회 이후 추가 화면 tap을 무시한다", () => {
-    expect(advanceTeaTapCount(3)).toBe(3);
-  });
-});
+  it("애니메이션 중 추가 tap을 무시해 sequence를 중복 실행하지 않는다", () => {
+    const animating = startTeaTapAnimation(INITIAL_TEA_TAP_ANIMATION_STATE);
 
-describe("getTeaTapVisualStage", () => {
-  it("진입 시 1/3부터 tap마다 2/3, 3/3을 표시한다", () => {
-    expect(getTeaTapVisualStage(0)).toBe(1);
-    expect(getTeaTapVisualStage(1)).toBe(2);
-    expect(getTeaTapVisualStage(2)).toBe(3);
-    expect(getTeaTapVisualStage(3)).toBe(3);
+    expect(startTeaTapAnimation(animating)).toBe(animating);
+  });
+
+  it("연속 애니메이션 완료 후 completed 상태를 유지한다", () => {
+    const completed = completeTeaTapAnimation(
+      startTeaTapAnimation(INITIAL_TEA_TAP_ANIMATION_STATE),
+    );
+
+    expect(completed).toEqual({ phase: "completed" });
+    expect(startTeaTapAnimation(completed)).toBe(completed);
+    expect(completeTeaTapAnimation(completed)).toBe(completed);
   });
 });

@@ -1,4 +1,5 @@
 export const S3_TAP_SETTINGS = {
-  targetCount: 3,
+  animationDurationMs: 1_250,
   completedStageDurationMs: 700,
+  stage2Progress: 0.4,
 } as const;
