@@ -13,9 +13,9 @@ import Animated, {
   Easing,
   interpolate,
   runOnJS,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
-  withSequence,
   withTiming,
 } from "react-native-reanimated";
 import {
@@ -87,81 +87,91 @@ function TeaBag({
   stage,
   tea,
 }: TeaBagProps) {
-  const animatedStage = useSharedValue(stage);
+  const initialProgress = stage === 1
+    ? 0
+    : stage === 2
+      ? S3_TAP_SETTINGS.stage2Progress
+      : 1;
+  const animationProgress = useSharedValue(initialProgress);
+  const progressInputRange = [0, S3_TAP_SETTINGS.stage2Progress, 1];
   const shellStyle = useAnimatedStyle(() => ({
-    height: interpolate(animatedStage.value, [1, 2, 3], [
+    height: interpolate(animationProgress.value, progressInputRange, [
       S3_TEA_BAG_LAYOUT[1].height,
       S3_TEA_BAG_LAYOUT[2].height,
       S3_TEA_BAG_LAYOUT[3].height,
     ]),
-    left: interpolate(animatedStage.value, [1, 2, 3], [
+    left: interpolate(animationProgress.value, progressInputRange, [
       S3_TEA_BAG_LAYOUT[1].left,
       S3_TEA_BAG_LAYOUT[2].left,
       S3_TEA_BAG_LAYOUT[3].left,
     ]),
-    top: interpolate(animatedStage.value, [1, 2, 3], [
+    top: interpolate(animationProgress.value, progressInputRange, [
       S3_TEA_BAG_LAYOUT[1].top,
       S3_TEA_BAG_LAYOUT[2].top,
       S3_TEA_BAG_LAYOUT[3].top,
     ]),
     transform: [{
-      rotate: `${interpolate(animatedStage.value, [1, 2, 3], [
+      rotate: `${interpolate(animationProgress.value, progressInputRange, [
         S3_TEA_BAG_LAYOUT[1].rotationDegrees,
         S3_TEA_BAG_LAYOUT[2].rotationDegrees,
         S3_TEA_BAG_LAYOUT[3].rotationDegrees,
       ])}deg`,
     }],
-    width: interpolate(animatedStage.value, [1, 2, 3], [
+    width: interpolate(animationProgress.value, progressInputRange, [
       S3_TEA_BAG_LAYOUT[1].width,
       S3_TEA_BAG_LAYOUT[2].width,
       S3_TEA_BAG_LAYOUT[3].width,
     ]),
   }));
   const contentStyle = useAnimatedStyle(() => ({
-    height: interpolate(animatedStage.value, [1, 2, 3], [
+    height: interpolate(animationProgress.value, progressInputRange, [
       tea.teaContentLayout[1].height,
       tea.teaContentLayout[2].height,
       tea.teaContentLayout[3].height,
     ]),
-    left: interpolate(animatedStage.value, [1, 2, 3], [
+    left: interpolate(animationProgress.value, progressInputRange, [
       tea.teaContentLayout[1].left,
       tea.teaContentLayout[2].left,
       tea.teaContentLayout[3].left,
     ]),
-    top: interpolate(animatedStage.value, [1, 2, 3], [
+    top: interpolate(animationProgress.value, progressInputRange, [
       tea.teaContentLayout[1].top,
       tea.teaContentLayout[2].top,
       tea.teaContentLayout[3].top,
     ]),
-    width: interpolate(animatedStage.value, [1, 2, 3], [
+    width: interpolate(animationProgress.value, progressInputRange, [
       tea.teaContentLayout[1].width,
       tea.teaContentLayout[2].width,
       tea.teaContentLayout[3].width,
     ]),
   }));
 
+  useAnimatedReaction(
+    () => animationProgress.value >= S3_TAP_SETTINGS.stage2Progress,
+    (reachedStage2, previouslyReachedStage2) => {
+      if (reachedStage2 && !previouslyReachedStage2 && onStageReached) {
+        runOnJS(onStageReached)(2);
+      }
+    },
+    [onStageReached],
+  );
+
   useEffect(() => {
     if (!animationStarted) {
       return;
     }
 
-    const timingConfig = {
-      duration: S3_TAP_SETTINGS.transitionDurationMs,
-      easing: Easing.inOut(Easing.cubic),
-    };
-    animatedStage.set(withSequence(
-      withTiming(2, timingConfig, (finished) => {
-        if (finished && onStageReached) {
-          runOnJS(onStageReached)(2);
-        }
-      }),
-      withTiming(3, timingConfig, (finished) => {
+    animationProgress.set(
+      withTiming(1, {
+        duration: S3_TAP_SETTINGS.animationDurationMs,
+        easing: Easing.inOut(Easing.cubic),
+      }, (finished) => {
         if (finished && onAnimationCompleted) {
           runOnJS(onAnimationCompleted)();
         }
       }),
-    ));
-  }, [animatedStage, animationStarted, onAnimationCompleted, onStageReached]);
+    );
+  }, [animationProgress, animationStarted, onAnimationCompleted]);
 
   return (
     <>
@@ -376,7 +386,6 @@ function TappingVisual({
       />
       <Image source={assets.teapot} style={[styles.absoluteAsset, teapotLayout]} />
       <Text style={styles.tapInstruction}>찻잎을 두드려 다관에 넣으세요</Text>
-      <Text style={styles.tapProgress}>{stage} / 3</Text>
     </Pressable>
   );
 }
@@ -819,17 +828,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.pretendardBold,
     fontSize: 14,
     lineHeight: 23,
-    textAlign: "center",
-  },
-  tapProgress: {
-    position: "absolute",
-    top: 650,
-    left: 24,
-    width: 342,
-    color: "#a7a7a7",
-    fontFamily: fontFamily.pretendardSemiBold,
-    fontSize: 12,
-    lineHeight: 20,
     textAlign: "center",
   },
 });
