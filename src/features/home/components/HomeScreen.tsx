@@ -257,13 +257,7 @@ export function HomeScreen() {
 
         <TeacupArea hasReleasedToday={hasReleasedToday} />
 
-        <Pressable
-          style={styles.ctaButton}
-          onPress={() => {
-            // @ts-expect-error: worry 화면 라우트가 아직 없다. worry 라우트가 생기면 이 줄이 타입에러로 지우라고 알려준다.
-            router.push("/worry");
-          }}
-        >
+        <Pressable style={styles.ctaButton} onPress={() => router.push("/worry")}>
           <Text style={styles.ctaButtonText}>오늘의 번뇌 날리기</Text>
         </Pressable>
 
