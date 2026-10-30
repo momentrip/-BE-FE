@@ -4,7 +4,6 @@ import { S3_TAP_SETTINGS } from "../constants/s3Preparation";
 import {
   completeTeaTapAnimation,
   INITIAL_TEA_TAP_ANIMATION_STATE,
-  reachTeaTapVisualStage,
   startTeaTapAnimation,
 } from "../utils/teaTapState";
 import type { TeaTapAnimationState } from "../utils/teaTapState";
@@ -17,9 +16,7 @@ type UseTeaTappingOptions = {
 export type TeaTappingState = {
   animationStarted: boolean;
   completeAnimation: () => void;
-  reachVisualStage: (stage: 2 | 3) => void;
   registerTap: () => void;
-  visualStage: 1 | 2 | 3;
 };
 
 export function useTeaTapping({
@@ -33,7 +30,6 @@ export function useTeaTapping({
   );
   const [animationStarted, setAnimationStarted] = useState(false);
   const [animationCompleted, setAnimationCompleted] = useState(false);
-  const [visualStage, setVisualStage] = useState<1 | 2 | 3>(1);
 
   useEffect(() => {
     completedCallbackRef.current = onCompleted;
@@ -53,12 +49,6 @@ export function useTeaTapping({
     setAnimationStarted(true);
   }, [enabled]);
 
-  const reachVisualStage = useCallback((stage: 2 | 3) => {
-    const next = reachTeaTapVisualStage(animationRef.current, stage);
-    animationRef.current = next;
-    setVisualStage(next.visualStage);
-  }, []);
-
   const completeAnimation = useCallback(() => {
     const next = completeTeaTapAnimation(animationRef.current);
     if (next === animationRef.current) {
@@ -66,7 +56,6 @@ export function useTeaTapping({
     }
 
     animationRef.current = next;
-    setVisualStage(next.visualStage);
     setAnimationCompleted(true);
   }, []);
 
@@ -86,8 +75,6 @@ export function useTeaTapping({
   return {
     animationStarted,
     completeAnimation,
-    reachVisualStage,
     registerTap,
-    visualStage,
   };
 }

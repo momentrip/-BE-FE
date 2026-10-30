@@ -13,11 +13,11 @@ import Animated, {
   Easing,
   interpolate,
   runOnJS,
-  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import type { SharedValue } from "react-native-reanimated";
 import {
   BlurMask,
   Canvas,
@@ -42,6 +42,11 @@ import {
 
 const DESIGN_WIDTH = 393;
 const DESIGN_HEIGHT = 852;
+const S3_TEAPOT_LAYOUT = {
+  1: { left: 79, top: 375, size: 235 },
+  2: { left: 62, top: 300, size: 287 },
+  3: { left: 15, top: 223, size: 364 },
+} as const;
 
 const assets = {
   backgroundLayer1: require("@/assets/images/teaFlow/s5-background-layer-1.png"),
@@ -71,9 +76,7 @@ function StepIndicator() {
 }
 
 type TeaBagProps = {
-  animationStarted?: boolean;
-  onAnimationCompleted?: () => void;
-  onStageReached?: (stage: 2 | 3) => void;
+  animationProgress?: SharedValue<number>;
   stage: 1 | 2 | 3;
   tea: S3TeaDisplayData;
 };
@@ -81,9 +84,7 @@ type TeaBagProps = {
 const AnimatedExpoImage = Animated.createAnimatedComponent(ExpoImage);
 
 function TeaBag({
-  animationStarted = false,
-  onAnimationCompleted,
-  onStageReached,
+  animationProgress: sharedAnimationProgress,
   stage,
   tea,
 }: TeaBagProps) {
@@ -92,7 +93,8 @@ function TeaBag({
     : stage === 2
       ? S3_TAP_SETTINGS.stage2Progress
       : 1;
-  const animationProgress = useSharedValue(initialProgress);
+  const staticProgress = useSharedValue(initialProgress);
+  const animationProgress = sharedAnimationProgress ?? staticProgress;
   const progressInputRange = [0, S3_TAP_SETTINGS.stage2Progress, 1];
   const shellStyle = useAnimatedStyle(() => ({
     height: interpolate(animationProgress.value, progressInputRange, [
@@ -146,33 +148,6 @@ function TeaBag({
     ]),
   }));
 
-  useAnimatedReaction(
-    () => animationProgress.value >= S3_TAP_SETTINGS.stage2Progress,
-    (reachedStage2, previouslyReachedStage2) => {
-      if (reachedStage2 && !previouslyReachedStage2 && onStageReached) {
-        runOnJS(onStageReached)(2);
-      }
-    },
-    [onStageReached],
-  );
-
-  useEffect(() => {
-    if (!animationStarted) {
-      return;
-    }
-
-    animationProgress.set(
-      withTiming(1, {
-        duration: S3_TAP_SETTINGS.animationDurationMs,
-        easing: Easing.inOut(Easing.cubic),
-      }, (finished) => {
-        if (finished && onAnimationCompleted) {
-          runOnJS(onAnimationCompleted)();
-        }
-      }),
-    );
-  }, [animationProgress, animationStarted, onAnimationCompleted]);
-
   return (
     <>
       <Animated.Image
@@ -190,37 +165,52 @@ function TeaBag({
 }
 
 type TapGlowProps = {
+  animationProgress: SharedValue<number>;
   color: S3TeaGlowColor;
-  stage: 2 | 3;
 };
 
-function TapGlow({ color, stage }: TapGlowProps) {
-  const isSecondStage = stage === 2;
-  const width = isSecondStage ? 254 : 353;
-  const height = isSecondStage ? 251 : 348;
-  const center = vec(width / 2, height / 2);
+function TapGlow({ animationProgress, color }: TapGlowProps) {
+  const stage2Style = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      animationProgress.value,
+      [0, S3_TAP_SETTINGS.stage2Progress, 1],
+      [0, 1, 0],
+    ),
+  }));
+  const stage3Style = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      animationProgress.value,
+      [0, S3_TAP_SETTINGS.stage2Progress, 1],
+      [0, 0, 1],
+    ),
+  }));
 
   return (
-    <Canvas style={isSecondStage ? styles.glowStage2 : styles.glowStage3}>
-      <Group opacity={isSecondStage ? 0.13 : 0.22}>
-        <Oval
-          color={isSecondStage ? color.primary : undefined}
-          height={isSecondStage ? 151 : 248}
-          width={isSecondStage ? 154 : 253}
-          x={50}
-          y={50}
-        >
-          {!isSecondStage && (
-            <RadialGradient
-              c={center}
-              colors={[color.secondary, color.edge]}
-              r={126.5}
-            />
-          )}
-          <BlurMask blur={25} style="normal" />
-        </Oval>
-      </Group>
-    </Canvas>
+    <>
+      <Animated.View style={[styles.glowStage2, stage2Style]}>
+        <Canvas style={StyleSheet.absoluteFill}>
+          <Group opacity={0.13}>
+            <Oval color={color.primary} height={151} width={154} x={50} y={50}>
+              <BlurMask blur={25} style="normal" />
+            </Oval>
+          </Group>
+        </Canvas>
+      </Animated.View>
+      <Animated.View style={[styles.glowStage3, stage3Style]}>
+        <Canvas style={StyleSheet.absoluteFill}>
+          <Group opacity={0.22}>
+            <Oval height={248} width={253} x={50} y={50}>
+              <RadialGradient
+                c={vec(176.5, 174)}
+                colors={[color.secondary, color.edge]}
+                r={126.5}
+              />
+              <BlurMask blur={25} style="normal" />
+            </Oval>
+          </Group>
+        </Canvas>
+      </Animated.View>
+    </>
   );
 }
 
@@ -339,9 +329,7 @@ type TappingVisualProps = {
   animationStarted: boolean;
   enabled: boolean;
   onAnimationCompleted: () => void;
-  onStageReached: (stage: 2 | 3) => void;
   onTap: () => void;
-  stage: 1 | 2 | 3;
   tea: S3TeaDisplayData;
 };
 
@@ -349,16 +337,53 @@ function TappingVisual({
   animationStarted,
   enabled,
   onAnimationCompleted,
-  onStageReached,
   onTap,
-  stage,
   tea,
 }: TappingVisualProps) {
-  const teapotLayout = stage === 1
-    ? styles.teapotStage1
-    : stage === 2
-      ? styles.teapotStage2
-      : styles.teapotStage3;
+  const animationProgress = useSharedValue(0);
+  const progressInputRange = [0, S3_TAP_SETTINGS.stage2Progress, 1];
+  const teapotStyle = useAnimatedStyle(() => ({
+    height: interpolate(animationProgress.value, progressInputRange, [
+      S3_TEAPOT_LAYOUT[1].size,
+      S3_TEAPOT_LAYOUT[2].size,
+      S3_TEAPOT_LAYOUT[3].size,
+    ]),
+    left: interpolate(animationProgress.value, progressInputRange, [
+      S3_TEAPOT_LAYOUT[1].left,
+      S3_TEAPOT_LAYOUT[2].left,
+      S3_TEAPOT_LAYOUT[3].left,
+    ]),
+    top: interpolate(animationProgress.value, progressInputRange, [
+      S3_TEAPOT_LAYOUT[1].top,
+      S3_TEAPOT_LAYOUT[2].top,
+      S3_TEAPOT_LAYOUT[3].top,
+    ]),
+    width: interpolate(animationProgress.value, progressInputRange, [
+      S3_TEAPOT_LAYOUT[1].size,
+      S3_TEAPOT_LAYOUT[2].size,
+      S3_TEAPOT_LAYOUT[3].size,
+    ]),
+  }));
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(animationProgress.value, progressInputRange, [0, 1, 1]),
+  }));
+
+  useEffect(() => {
+    if (!animationStarted) {
+      return;
+    }
+
+    animationProgress.set(
+      withTiming(1, {
+        duration: S3_TAP_SETTINGS.animationDurationMs,
+        easing: Easing.inOut(Easing.cubic),
+      }, (finished) => {
+        if (finished) {
+          runOnJS(onAnimationCompleted)();
+        }
+      }),
+    );
+  }, [animationProgress, animationStarted, onAnimationCompleted]);
 
   return (
     <Pressable
@@ -368,23 +393,19 @@ function TappingVisual({
       onPress={onTap}
       style={StyleSheet.absoluteFill}
     >
-      {stage >= 2 && (
-        <>
-          <Image source={assets.backgroundLayer1} style={styles.backgroundLayer1} />
-          <Image source={assets.backgroundLayer2} style={styles.backgroundLayer2} />
-        </>
-      )}
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, overlayStyle]}>
+        <Image source={assets.backgroundLayer1} style={styles.backgroundLayer1} />
+        <Image source={assets.backgroundLayer2} style={styles.backgroundLayer2} />
+      </Animated.View>
       <Image source={assets.backgroundLayer3} style={styles.backgroundLayer3} />
       <StepIndicator />
-      {(stage === 2 || stage === 3) && <TapGlow color={tea.glowColor} stage={stage} />}
+      <TapGlow animationProgress={animationProgress} color={tea.glowColor} />
       <TeaBag
-        animationStarted={animationStarted}
-        onAnimationCompleted={onAnimationCompleted}
-        onStageReached={onStageReached}
+        animationProgress={animationProgress}
         stage={1}
         tea={tea}
       />
-      <Image source={assets.teapot} style={[styles.absoluteAsset, teapotLayout]} />
+      <Animated.Image source={assets.teapot} style={[styles.absoluteAsset, teapotStyle]} />
       <Text style={styles.tapInstruction}>찻잎을 두드려 다관에 넣으세요</Text>
     </Pressable>
   );
@@ -392,7 +413,7 @@ function TappingVisual({
 
 /**
  * S3 추천 차 선택, 센서 안내, 한 번의 탭으로 찻잎을 넣는 흐름을 표시한다.
- * @param props.onCompleted 3/3 비주얼 표시 후 차 우리기 route에서 연결할 완료 callback
+ * @param props.onCompleted 최종 비주얼 표시 후 차 우리기 route에서 연결할 완료 callback
  * @returns 오늘의 차 준비 화면
  * 사용처: src/app/tea-preparation
  */
@@ -441,9 +462,7 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
             animationStarted={tapping.animationStarted}
             enabled={preparation.phase === "tapping"}
             onAnimationCompleted={tapping.completeAnimation}
-            onStageReached={tapping.reachVisualStage}
             onTap={tapping.registerTap}
-            stage={tapping.visualStage}
             tea={selectedTea}
           />
         ) : (
@@ -816,9 +835,6 @@ const styles = StyleSheet.create({
     width: 353,
     height: 348,
   },
-  teapotStage1: { left: 79, top: 375, width: 235, height: 235 },
-  teapotStage2: { left: 62, top: 300, width: 287, height: 287 },
-  teapotStage3: { left: 15, top: 223, width: 364, height: 364 },
   tapInstruction: {
     position: "absolute",
     top: 620,
