@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { S3_TAP_SETTINGS } from "../constants/s3Preparation";
 import {
-  advanceTeaTapCount,
+  finishTeaTapTransition,
   getTeaTapVisualStage,
+  INITIAL_TEA_TAP_TRANSITION_STATE,
+  registerTeaTap,
 } from "../utils/teaTapState";
-import type { TeaTapCount } from "../utils/teaTapState";
+import type { TeaTapCount, TeaTapTransitionState } from "../utils/teaTapState";
 
 type UseTeaTappingOptions = {
   enabled: boolean;
@@ -14,6 +16,7 @@ type UseTeaTappingOptions = {
 
 export type TeaTappingState = {
   count: TeaTapCount;
+  finishTransition: () => void;
   registerTap: () => void;
   visualStage: 1 | 2 | 3;
 };
@@ -24,6 +27,9 @@ export function useTeaTapping({
 }: UseTeaTappingOptions): TeaTappingState {
   const completedCallbackRef = useRef(onCompleted);
   const completionScheduledRef = useRef(false);
+  const transitionRef = useRef<TeaTapTransitionState>(
+    INITIAL_TEA_TAP_TRANSITION_STATE,
+  );
   const [count, setCount] = useState<TeaTapCount>(0);
 
   useEffect(() => {
@@ -34,8 +40,19 @@ export function useTeaTapping({
     if (!enabled) {
       return;
     }
-    setCount((previous) => advanceTeaTapCount(previous));
+
+    const next = registerTeaTap(transitionRef.current);
+    if (next === transitionRef.current) {
+      return;
+    }
+
+    transitionRef.current = next;
+    setCount(next.count);
   }, [enabled]);
+
+  const finishTransition = useCallback(() => {
+    transitionRef.current = finishTeaTapTransition(transitionRef.current);
+  }, []);
 
   useEffect(() => {
     if (count < S3_TAP_SETTINGS.targetCount || completionScheduledRef.current) {
@@ -52,6 +69,7 @@ export function useTeaTapping({
 
   return {
     count,
+    finishTransition,
     registerTap,
     visualStage: getTeaTapVisualStage(count),
   };

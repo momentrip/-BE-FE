@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer } from "react";
 import {
   Image,
   Pressable,
@@ -9,6 +9,14 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Image as ExpoImage } from "expo-image";
+import Animated, {
+  Easing,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import {
   BlurMask,
   Canvas,
@@ -22,6 +30,7 @@ import { fontFamily } from "@/shared/theme";
 import { useImpactShared } from "@/shared/sensors";
 
 import { S3_TEA_BAG_LAYOUT } from "../data/s3TeaBagLayout";
+import { S3_TAP_SETTINGS } from "../constants/s3Preparation";
 import { S3_TEA_OPTIONS } from "../data/s3TeaOptions";
 import type { S3TeaDisplayData, S3TeaGlowColor } from "../data/s3TeaOptions";
 import { useTeaTapping } from "../hooks/useTeaTapping";
@@ -61,28 +70,97 @@ function StepIndicator() {
 }
 
 type TeaBagProps = {
+  onTransitionCompleted?: () => void;
   stage: 1 | 2 | 3;
   tea: S3TeaDisplayData;
 };
 
-function TeaBag({ stage, tea }: TeaBagProps) {
-  const { rotationDegrees, ...shellLayout } = S3_TEA_BAG_LAYOUT[stage];
+const AnimatedExpoImage = Animated.createAnimatedComponent(ExpoImage);
+
+function TeaBag({ onTransitionCompleted, stage, tea }: TeaBagProps) {
+  const animatedStage = useSharedValue(stage);
+  const shellStyle = useAnimatedStyle(() => ({
+    height: interpolate(animatedStage.value, [1, 2, 3], [
+      S3_TEA_BAG_LAYOUT[1].height,
+      S3_TEA_BAG_LAYOUT[2].height,
+      S3_TEA_BAG_LAYOUT[3].height,
+    ]),
+    left: interpolate(animatedStage.value, [1, 2, 3], [
+      S3_TEA_BAG_LAYOUT[1].left,
+      S3_TEA_BAG_LAYOUT[2].left,
+      S3_TEA_BAG_LAYOUT[3].left,
+    ]),
+    top: interpolate(animatedStage.value, [1, 2, 3], [
+      S3_TEA_BAG_LAYOUT[1].top,
+      S3_TEA_BAG_LAYOUT[2].top,
+      S3_TEA_BAG_LAYOUT[3].top,
+    ]),
+    transform: [{
+      rotate: `${interpolate(animatedStage.value, [1, 2, 3], [
+        S3_TEA_BAG_LAYOUT[1].rotationDegrees,
+        S3_TEA_BAG_LAYOUT[2].rotationDegrees,
+        S3_TEA_BAG_LAYOUT[3].rotationDegrees,
+      ])}deg`,
+    }],
+    width: interpolate(animatedStage.value, [1, 2, 3], [
+      S3_TEA_BAG_LAYOUT[1].width,
+      S3_TEA_BAG_LAYOUT[2].width,
+      S3_TEA_BAG_LAYOUT[3].width,
+    ]),
+  }));
+  const contentStyle = useAnimatedStyle(() => ({
+    height: interpolate(animatedStage.value, [1, 2, 3], [
+      tea.teaContentLayout[1].height,
+      tea.teaContentLayout[2].height,
+      tea.teaContentLayout[3].height,
+    ]),
+    left: interpolate(animatedStage.value, [1, 2, 3], [
+      tea.teaContentLayout[1].left,
+      tea.teaContentLayout[2].left,
+      tea.teaContentLayout[3].left,
+    ]),
+    top: interpolate(animatedStage.value, [1, 2, 3], [
+      tea.teaContentLayout[1].top,
+      tea.teaContentLayout[2].top,
+      tea.teaContentLayout[3].top,
+    ]),
+    width: interpolate(animatedStage.value, [1, 2, 3], [
+      tea.teaContentLayout[1].width,
+      tea.teaContentLayout[2].width,
+      tea.teaContentLayout[3].width,
+    ]),
+  }));
+
+  useEffect(() => {
+    if (animatedStage.value === stage) {
+      return;
+    }
+
+    animatedStage.set(withTiming(
+      stage,
+      {
+        duration: S3_TAP_SETTINGS.transitionDurationMs,
+        easing: Easing.inOut(Easing.cubic),
+      },
+      (finished) => {
+        if (finished && onTransitionCompleted) {
+          runOnJS(onTransitionCompleted)();
+        }
+      },
+    ));
+  }, [animatedStage, onTransitionCompleted, stage]);
 
   return (
     <>
-      <Image
+      <Animated.Image
         resizeMode="contain"
         source={tea.teaContentImage}
-        style={[styles.teaContentImage, tea.teaContentLayout[stage]]}
+        style={[styles.teaContentImage, contentStyle]}
       />
-      <ExpoImage
+      <AnimatedExpoImage
         contentFit="fill"
         source={assets.teaBag}
-        style={[
-          styles.teaBagAsset,
-          shellLayout,
-          { transform: [{ rotate: `${rotationDegrees}deg` }] },
-        ]}
+        style={[styles.teaBagAsset, shellStyle]}
       />
     </>
   );
@@ -237,11 +315,18 @@ function SensorGuide({ onAllow, onFallback, requesting }: SensorGuideProps) {
 type TappingVisualProps = {
   enabled: boolean;
   onTap: () => void;
+  onTransitionCompleted: () => void;
   stage: 1 | 2 | 3;
   tea: S3TeaDisplayData;
 };
 
-function TappingVisual({ enabled, onTap, stage, tea }: TappingVisualProps) {
+function TappingVisual({
+  enabled,
+  onTap,
+  onTransitionCompleted,
+  stage,
+  tea,
+}: TappingVisualProps) {
   const teapotLayout = stage === 1
     ? styles.teapotStage1
     : stage === 2
@@ -265,7 +350,11 @@ function TappingVisual({ enabled, onTap, stage, tea }: TappingVisualProps) {
       <Image source={assets.backgroundLayer3} style={styles.backgroundLayer3} />
       <StepIndicator />
       {(stage === 2 || stage === 3) && <TapGlow color={tea.glowColor} stage={stage} />}
-      <TeaBag stage={stage} tea={tea} />
+      <TeaBag
+        onTransitionCompleted={onTransitionCompleted}
+        stage={stage}
+        tea={tea}
+      />
       <Image source={assets.teapot} style={[styles.absoluteAsset, teapotLayout]} />
       <Text style={styles.tapInstruction}>찻잎을 두드려 다관에 넣으세요</Text>
       <Text style={styles.tapProgress}>{stage} / 3</Text>
@@ -323,6 +412,7 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
           <TappingVisual
             enabled={preparation.phase === "tapping"}
             onTap={tapping.registerTap}
+            onTransitionCompleted={tapping.finishTransition}
             stage={tapping.visualStage}
             tea={selectedTea}
           />

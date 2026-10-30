@@ -2,7 +2,10 @@ import { describe, expect, it } from "@jest/globals";
 
 import {
   advanceTeaTapCount,
+  finishTeaTapTransition,
   getTeaTapVisualStage,
+  INITIAL_TEA_TAP_TRANSITION_STATE,
+  registerTeaTap,
 } from "./teaTapState";
 
 describe("advanceTeaTapCount", () => {
@@ -27,5 +30,30 @@ describe("getTeaTapVisualStage", () => {
     expect(getTeaTapVisualStage(1)).toBe(2);
     expect(getTeaTapVisualStage(2)).toBe(3);
     expect(getTeaTapVisualStage(3)).toBe(3);
+  });
+});
+
+describe("tea tap transition", () => {
+  it("전환 중 추가 tap을 무시해 stage를 건너뛰지 않는다", () => {
+    const transitioning = registerTeaTap(INITIAL_TEA_TAP_TRANSITION_STATE);
+    const repeatedTap = registerTeaTap(transitioning);
+
+    expect(transitioning).toEqual({ count: 1, transitioning: true });
+    expect(repeatedTap).toBe(transitioning);
+  });
+
+  it("전환 완료 후 다음 tap을 한 단계만 반영한다", () => {
+    const secondStage = finishTeaTapTransition(
+      registerTeaTap(INITIAL_TEA_TAP_TRANSITION_STATE),
+    );
+    const thirdStage = registerTeaTap(secondStage);
+
+    expect(thirdStage).toEqual({ count: 2, transitioning: true });
+  });
+
+  it("3/3에서 완료 tap은 시각 전환 잠금을 만들지 않는다", () => {
+    const thirdStage = finishTeaTapTransition({ count: 2, transitioning: true });
+
+    expect(registerTeaTap(thirdStage)).toEqual({ count: 3, transitioning: false });
   });
 });
