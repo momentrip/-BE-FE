@@ -1,7 +1,23 @@
-// 명언(선어) 데이터 구조. 필드는 디자인 시안 8-2(선어 낙관), 8-3(해설 펼침) 기준 초안이며 PM 합의 후 확정한다.
+import type { WorryKind } from '@/shared/constants';
+
+// 명언(선어) 데이터 구조. 필드는 디자인 시안 8-2(선어 낙관), 8-3(해설 펼침) 기준이다.
 
 /** 명언의 분위기. 위기 입력일 때 'heavy'는 추천하지 않는다 (AGENTS.md 10장). */
 export type QuoteTone = 'comfort' | 'cheer' | 'reflect' | 'heavy';
+
+/**
+ * 수인(불상의 손 모양). 피그마 디자인 레퍼런스 '고민별 수인 매칭' 기준.
+ * 자책·무기력은 지권인, 기본(잘 모르겠어요)은 찻잔 감싸기다.
+ */
+export type Mudra =
+  | '시무외인'
+  | '여원인'
+  | '선정인'
+  | '항마촉지인'
+  | '전법륜인'
+  | '합장'
+  | '지권인'
+  | '찻잔 감싸기';
 
 export type Quote = {
   id: string;
@@ -19,20 +35,16 @@ export type Quote = {
   author: string;
   /** 출처 (문헌명 등). 화면에는 보이지 않지만 저작권 확인용으로 반드시 기록한다. */
   source: string;
-  // TODO(협의): worry_kind id 타입이 공개되면 string 대신 그 타입을 쓴다.
-  /** 어울리는 번뇌 종류. worry_kind id를 그대로 쓴다. */
-  themes: string[];
+  /** 어울리는 번뇌 종류 */
+  themes: WorryKind[];
   tone: QuoteTone;
-  // TODO(협의): tea 도메인의 차 id 목록이 정해지면 그 타입을 쓴다.
-  /** 어울리는 차. tea 도메인의 차 id를 그대로 쓴다. */
-  teas: string[];
+  /** 8-2 세 번째 칩에 보여줄 수인. 예: 시무외인 */
+  mudra: Mudra;
 };
 
 export type RecommendInput = {
-  /** 사용자가 고른(또는 분류된) 번뇌 종류 worry_kind id */
-  worryKind: string;
-  /** 사용자가 고른 차 id */
-  tea: string;
+  /** 사용자가 고른(또는 분류된) 번뇌 종류 */
+  worryKind: WorryKind;
   /** safety가 위기 표현을 감지했는지 */
   isCrisis: boolean;
   /** 최근에 받은 명언 id들. 같은 명언 반복을 피하는 데 쓴다. */

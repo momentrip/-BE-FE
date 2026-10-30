@@ -18,8 +18,7 @@ export const QUOTES: Quote[] = [
     source: '',
     themes: ['anxiety_worry'],
     tone: 'comfort',
-    // TODO(협의): tea 도메인 차 id 확정 후 수정. 시안 8-2 칩 기준 임시값.
-    teas: ['gukhwa'],
+    mudra: '시무외인',
   },
 ];
 
