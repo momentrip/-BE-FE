@@ -1,45 +1,37 @@
-import { S3_TAP_SETTINGS } from "../constants/s3Preparation";
-
-export type TeaTapCount = 0 | 1 | 2 | 3;
-
-export type TeaTapTransitionState = {
-  count: TeaTapCount;
-  transitioning: boolean;
+export type TeaTapAnimationState = {
+  phase: "idle" | "animating" | "completed";
+  visualStage: 1 | 2 | 3;
 };
 
-export const INITIAL_TEA_TAP_TRANSITION_STATE: TeaTapTransitionState = {
-  count: 0,
-  transitioning: false,
+export const INITIAL_TEA_TAP_ANIMATION_STATE: TeaTapAnimationState = {
+  phase: "idle",
+  visualStage: 1,
 };
 
-export function advanceTeaTapCount(previous: TeaTapCount): TeaTapCount {
-  if (previous >= S3_TAP_SETTINGS.targetCount) {
+export function startTeaTapAnimation(
+  previous: TeaTapAnimationState,
+): TeaTapAnimationState {
+  if (previous.phase !== "idle") {
     return previous;
   }
-  return Math.min(S3_TAP_SETTINGS.targetCount, previous + 1) as TeaTapCount;
+  return { ...previous, phase: "animating" };
 }
 
-export function getTeaTapVisualStage(count: TeaTapCount): 1 | 2 | 3 {
-  return Math.min(3, count + 1) as 1 | 2 | 3;
-}
-
-export function registerTeaTap(
-  previous: TeaTapTransitionState,
-): TeaTapTransitionState {
-  if (previous.transitioning) {
+export function reachTeaTapVisualStage(
+  previous: TeaTapAnimationState,
+  visualStage: 2 | 3,
+): TeaTapAnimationState {
+  if (previous.phase !== "animating" || visualStage <= previous.visualStage) {
     return previous;
   }
-
-  const count = advanceTeaTapCount(previous.count);
-  return {
-    count,
-    transitioning:
-      getTeaTapVisualStage(count) !== getTeaTapVisualStage(previous.count),
-  };
+  return { ...previous, visualStage };
 }
 
-export function finishTeaTapTransition(
-  previous: TeaTapTransitionState,
-): TeaTapTransitionState {
-  return { ...previous, transitioning: false };
+export function completeTeaTapAnimation(
+  previous: TeaTapAnimationState,
+): TeaTapAnimationState {
+  if (previous.phase !== "animating") {
+    return previous;
+  }
+  return { phase: "completed", visualStage: 3 };
 }

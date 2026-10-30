@@ -15,6 +15,7 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withTiming,
 } from "react-native-reanimated";
 import {
@@ -70,14 +71,22 @@ function StepIndicator() {
 }
 
 type TeaBagProps = {
-  onTransitionCompleted?: () => void;
+  animationStarted?: boolean;
+  onAnimationCompleted?: () => void;
+  onStageReached?: (stage: 2 | 3) => void;
   stage: 1 | 2 | 3;
   tea: S3TeaDisplayData;
 };
 
 const AnimatedExpoImage = Animated.createAnimatedComponent(ExpoImage);
 
-function TeaBag({ onTransitionCompleted, stage, tea }: TeaBagProps) {
+function TeaBag({
+  animationStarted = false,
+  onAnimationCompleted,
+  onStageReached,
+  stage,
+  tea,
+}: TeaBagProps) {
   const animatedStage = useSharedValue(stage);
   const shellStyle = useAnimatedStyle(() => ({
     height: interpolate(animatedStage.value, [1, 2, 3], [
@@ -132,23 +141,27 @@ function TeaBag({ onTransitionCompleted, stage, tea }: TeaBagProps) {
   }));
 
   useEffect(() => {
-    if (animatedStage.value === stage) {
+    if (!animationStarted) {
       return;
     }
 
-    animatedStage.set(withTiming(
-      stage,
-      {
-        duration: S3_TAP_SETTINGS.transitionDurationMs,
-        easing: Easing.inOut(Easing.cubic),
-      },
-      (finished) => {
-        if (finished && onTransitionCompleted) {
-          runOnJS(onTransitionCompleted)();
+    const timingConfig = {
+      duration: S3_TAP_SETTINGS.transitionDurationMs,
+      easing: Easing.inOut(Easing.cubic),
+    };
+    animatedStage.set(withSequence(
+      withTiming(2, timingConfig, (finished) => {
+        if (finished && onStageReached) {
+          runOnJS(onStageReached)(2);
         }
-      },
+      }),
+      withTiming(3, timingConfig, (finished) => {
+        if (finished && onAnimationCompleted) {
+          runOnJS(onAnimationCompleted)();
+        }
+      }),
     ));
-  }, [animatedStage, onTransitionCompleted, stage]);
+  }, [animatedStage, animationStarted, onAnimationCompleted, onStageReached]);
 
   return (
     <>
@@ -313,17 +326,21 @@ function SensorGuide({ onAllow, onFallback, requesting }: SensorGuideProps) {
 }
 
 type TappingVisualProps = {
+  animationStarted: boolean;
   enabled: boolean;
+  onAnimationCompleted: () => void;
+  onStageReached: (stage: 2 | 3) => void;
   onTap: () => void;
-  onTransitionCompleted: () => void;
   stage: 1 | 2 | 3;
   tea: S3TeaDisplayData;
 };
 
 function TappingVisual({
+  animationStarted,
   enabled,
+  onAnimationCompleted,
+  onStageReached,
   onTap,
-  onTransitionCompleted,
   stage,
   tea,
 }: TappingVisualProps) {
@@ -335,9 +352,9 @@ function TappingVisual({
 
   return (
     <Pressable
-      accessibilityHint="화면을 두드릴 때마다 다음 단계로 진행합니다"
+      accessibilityHint="화면을 한 번 두드리면 찻잎 넣기가 시작됩니다"
       accessibilityLabel="찻잎 두드리기"
-      disabled={!enabled}
+      disabled={!enabled || animationStarted}
       onPress={onTap}
       style={StyleSheet.absoluteFill}
     >
@@ -351,8 +368,10 @@ function TappingVisual({
       <StepIndicator />
       {(stage === 2 || stage === 3) && <TapGlow color={tea.glowColor} stage={stage} />}
       <TeaBag
-        onTransitionCompleted={onTransitionCompleted}
-        stage={stage}
+        animationStarted={animationStarted}
+        onAnimationCompleted={onAnimationCompleted}
+        onStageReached={onStageReached}
+        stage={1}
         tea={tea}
       />
       <Image source={assets.teapot} style={[styles.absoluteAsset, teapotLayout]} />
@@ -363,7 +382,7 @@ function TappingVisual({
 }
 
 /**
- * S3 추천 차 선택, 센서 안내, 찻잎 세 번 두드리기 흐름을 표시한다.
+ * S3 추천 차 선택, 센서 안내, 한 번의 탭으로 찻잎을 넣는 흐름을 표시한다.
  * @param props.onCompleted 3/3 비주얼 표시 후 차 우리기 route에서 연결할 완료 callback
  * @returns 오늘의 차 준비 화면
  * 사용처: src/app/tea-preparation
@@ -410,9 +429,11 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
       <View style={[styles.canvas, { transform: [{ scale }] }]}>
         {tappingVisible ? (
           <TappingVisual
+            animationStarted={tapping.animationStarted}
             enabled={preparation.phase === "tapping"}
+            onAnimationCompleted={tapping.completeAnimation}
+            onStageReached={tapping.reachVisualStage}
             onTap={tapping.registerTap}
-            onTransitionCompleted={tapping.finishTransition}
             stage={tapping.visualStage}
             tea={selectedTea}
           />

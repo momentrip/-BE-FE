@@ -1,59 +1,47 @@
 import { describe, expect, it } from "@jest/globals";
 
 import {
-  advanceTeaTapCount,
-  finishTeaTapTransition,
-  getTeaTapVisualStage,
-  INITIAL_TEA_TAP_TRANSITION_STATE,
-  registerTeaTap,
+  completeTeaTapAnimation,
+  INITIAL_TEA_TAP_ANIMATION_STATE,
+  reachTeaTapVisualStage,
+  startTeaTapAnimation,
 } from "./teaTapState";
 
-describe("advanceTeaTapCount", () => {
-  it("화면을 누를 때마다 한 단계씩 최대 3회 센다", () => {
-    const firstTap = advanceTeaTapCount(0);
-    const secondTap = advanceTeaTapCount(firstTap);
-    const thirdTap = advanceTeaTapCount(secondTap);
+describe("tea tap animation", () => {
+  it("초기 상태는 stage 1이며 최초 tap으로 애니메이션을 시작한다", () => {
+    expect(INITIAL_TEA_TAP_ANIMATION_STATE).toEqual({
+      phase: "idle",
+      visualStage: 1,
+    });
 
-    expect(firstTap).toBe(1);
-    expect(secondTap).toBe(2);
-    expect(thirdTap).toBe(3);
+    expect(startTeaTapAnimation(INITIAL_TEA_TAP_ANIMATION_STATE)).toEqual({
+      phase: "animating",
+      visualStage: 1,
+    });
   });
 
-  it("3회 이후 추가 화면 tap을 무시한다", () => {
-    expect(advanceTeaTapCount(3)).toBe(3);
-  });
-});
+  it("애니메이션 중 추가 tap을 무시해 sequence를 중복 실행하지 않는다", () => {
+    const animating = startTeaTapAnimation(INITIAL_TEA_TAP_ANIMATION_STATE);
 
-describe("getTeaTapVisualStage", () => {
-  it("진입 시 1/3부터 tap마다 2/3, 3/3을 표시한다", () => {
-    expect(getTeaTapVisualStage(0)).toBe(1);
-    expect(getTeaTapVisualStage(1)).toBe(2);
-    expect(getTeaTapVisualStage(2)).toBe(3);
-    expect(getTeaTapVisualStage(3)).toBe(3);
-  });
-});
-
-describe("tea tap transition", () => {
-  it("전환 중 추가 tap을 무시해 stage를 건너뛰지 않는다", () => {
-    const transitioning = registerTeaTap(INITIAL_TEA_TAP_TRANSITION_STATE);
-    const repeatedTap = registerTeaTap(transitioning);
-
-    expect(transitioning).toEqual({ count: 1, transitioning: true });
-    expect(repeatedTap).toBe(transitioning);
+    expect(startTeaTapAnimation(animating)).toBe(animating);
   });
 
-  it("전환 완료 후 다음 tap을 한 단계만 반영한다", () => {
-    const secondStage = finishTeaTapTransition(
-      registerTeaTap(INITIAL_TEA_TAP_TRANSITION_STATE),
+  it("추가 tap 없이 stage 2와 stage 3을 순서대로 반영한다", () => {
+    const animating = startTeaTapAnimation(INITIAL_TEA_TAP_ANIMATION_STATE);
+    const stage2 = reachTeaTapVisualStage(animating, 2);
+    const stage3 = reachTeaTapVisualStage(stage2, 3);
+
+    expect(stage2.visualStage).toBe(2);
+    expect(stage3.visualStage).toBe(3);
+  });
+
+  it("sequence 완료 후 stage 3 completed 상태를 유지한다", () => {
+    const completed = completeTeaTapAnimation(
+      startTeaTapAnimation(INITIAL_TEA_TAP_ANIMATION_STATE),
     );
-    const thirdStage = registerTeaTap(secondStage);
 
-    expect(thirdStage).toEqual({ count: 2, transitioning: true });
-  });
-
-  it("3/3에서 완료 tap은 시각 전환 잠금을 만들지 않는다", () => {
-    const thirdStage = finishTeaTapTransition({ count: 2, transitioning: true });
-
-    expect(registerTeaTap(thirdStage)).toEqual({ count: 3, transitioning: false });
+    expect(completed).toEqual({ phase: "completed", visualStage: 3 });
+    expect(startTeaTapAnimation(completed)).toBe(completed);
+    expect(completeTeaTapAnimation(completed)).toBe(completed);
   });
 });

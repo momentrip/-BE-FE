@@ -2,12 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { S3_TAP_SETTINGS } from "../constants/s3Preparation";
 import {
-  finishTeaTapTransition,
-  getTeaTapVisualStage,
-  INITIAL_TEA_TAP_TRANSITION_STATE,
-  registerTeaTap,
+  completeTeaTapAnimation,
+  INITIAL_TEA_TAP_ANIMATION_STATE,
+  reachTeaTapVisualStage,
+  startTeaTapAnimation,
 } from "../utils/teaTapState";
-import type { TeaTapCount, TeaTapTransitionState } from "../utils/teaTapState";
+import type { TeaTapAnimationState } from "../utils/teaTapState";
 
 type UseTeaTappingOptions = {
   enabled: boolean;
@@ -15,8 +15,9 @@ type UseTeaTappingOptions = {
 };
 
 export type TeaTappingState = {
-  count: TeaTapCount;
-  finishTransition: () => void;
+  animationStarted: boolean;
+  completeAnimation: () => void;
+  reachVisualStage: (stage: 2 | 3) => void;
   registerTap: () => void;
   visualStage: 1 | 2 | 3;
 };
@@ -27,10 +28,12 @@ export function useTeaTapping({
 }: UseTeaTappingOptions): TeaTappingState {
   const completedCallbackRef = useRef(onCompleted);
   const completionScheduledRef = useRef(false);
-  const transitionRef = useRef<TeaTapTransitionState>(
-    INITIAL_TEA_TAP_TRANSITION_STATE,
+  const animationRef = useRef<TeaTapAnimationState>(
+    INITIAL_TEA_TAP_ANIMATION_STATE,
   );
-  const [count, setCount] = useState<TeaTapCount>(0);
+  const [animationStarted, setAnimationStarted] = useState(false);
+  const [animationCompleted, setAnimationCompleted] = useState(false);
+  const [visualStage, setVisualStage] = useState<1 | 2 | 3>(1);
 
   useEffect(() => {
     completedCallbackRef.current = onCompleted;
@@ -41,21 +44,34 @@ export function useTeaTapping({
       return;
     }
 
-    const next = registerTeaTap(transitionRef.current);
-    if (next === transitionRef.current) {
+    const next = startTeaTapAnimation(animationRef.current);
+    if (next === animationRef.current) {
       return;
     }
 
-    transitionRef.current = next;
-    setCount(next.count);
+    animationRef.current = next;
+    setAnimationStarted(true);
   }, [enabled]);
 
-  const finishTransition = useCallback(() => {
-    transitionRef.current = finishTeaTapTransition(transitionRef.current);
+  const reachVisualStage = useCallback((stage: 2 | 3) => {
+    const next = reachTeaTapVisualStage(animationRef.current, stage);
+    animationRef.current = next;
+    setVisualStage(next.visualStage);
+  }, []);
+
+  const completeAnimation = useCallback(() => {
+    const next = completeTeaTapAnimation(animationRef.current);
+    if (next === animationRef.current) {
+      return;
+    }
+
+    animationRef.current = next;
+    setVisualStage(next.visualStage);
+    setAnimationCompleted(true);
   }, []);
 
   useEffect(() => {
-    if (count < S3_TAP_SETTINGS.targetCount || completionScheduledRef.current) {
+    if (!animationCompleted || completionScheduledRef.current) {
       return;
     }
 
@@ -65,12 +81,13 @@ export function useTeaTapping({
     }, S3_TAP_SETTINGS.completedStageDurationMs);
 
     return () => clearTimeout(timer);
-  }, [count]);
+  }, [animationCompleted]);
 
   return {
-    count,
-    finishTransition,
+    animationStarted,
+    completeAnimation,
+    reachVisualStage,
     registerTap,
-    visualStage: getTeaTapVisualStage(count),
+    visualStage,
   };
 }
