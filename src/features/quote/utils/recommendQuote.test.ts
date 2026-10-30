@@ -4,7 +4,6 @@ import type { RecommendInput } from '../types';
 
 const baseInput: RecommendInput = {
   worryKind: 'anxiety_worry',
-  tea: 'gukhwa',
   isCrisis: false,
   recentQuoteIds: [],
   seed: 1,
@@ -21,7 +20,7 @@ describe('recommendQuote', () => {
   });
 
   it('맞는 명언이 없는 입력에도 명언을 돌려준다', () => {
-    const quote = recommendQuote({ ...baseInput, worryKind: 'unsure', tea: 'unknown' });
+    const quote = recommendQuote({ ...baseInput, worryKind: 'unsure' });
     expect(quote.id).toBeTruthy();
   });
 });

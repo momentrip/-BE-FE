@@ -2,4 +2,4 @@
 
 export { matchWorryKind } from './utils/matchWorryKind';
 export { recommendQuote } from './utils/recommendQuote';
-export type { Quote, QuoteTone, RecommendInput } from './types';
+export type { Mudra, Quote, QuoteTone, RecommendInput } from './types';
