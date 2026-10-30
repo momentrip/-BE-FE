@@ -2,6 +2,8 @@ import { Image, StyleSheet, Text, View } from "react-native";
 
 import { fontFamily } from "@/shared/theme";
 
+import { WORRY_RESULT_TEXT_WIDTH } from "./worryLayout";
+
 export const CARD_LEFT = 105;
 export const CARD_TOP = 158;
 export const CARD_WIDTH = 182;
@@ -64,7 +66,7 @@ const styles = StyleSheet.create({
     height: RESULT_CARD_HEIGHT - 128,
   },
   resultCardText: {
-    paddingHorizontal: 40,
+    width: WORRY_RESULT_TEXT_WIDTH,
     color: "#3d3d3d",
     fontFamily: fontFamily.sub3,
     fontSize: 18,
