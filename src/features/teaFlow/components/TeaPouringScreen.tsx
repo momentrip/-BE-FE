@@ -31,6 +31,7 @@ import {
   getS5EffectivePouringState,
 } from "../utils/s5PouringState";
 import { getS5LiquidFillHeight, getS5LiquidOpacity } from "../utils/s5LiquidDisplay";
+import { getS5PouringLiquidColor } from "../utils/getS5PouringLiquidColor";
 import { getS5TeaColor } from "../utils/getS5TeaColor";
 import { getTeaLiquidDisplayColor } from "../utils/getTeaLiquidDisplayColor";
 import type { TeaPouringStatus } from "../utils/zTwistState";
@@ -185,6 +186,7 @@ function PouringVisual({ status, progress, teaColor }: PouringVisualProps) {
     : status === "tooFast"
       ? "rgba(255,90,90,0.36)"
       : "rgba(255,233,90,0.13)";
+  const pouringLiquidColor = getS5PouringLiquidColor(teaColor);
 
   return (
     <>
@@ -192,8 +194,8 @@ function PouringVisual({ status, progress, teaColor }: PouringVisualProps) {
       <View style={styles.teapotFrame}>
         <Image source={screenAssets.teapot} style={[styles.teapot, { transform: [{ rotate: rotation }] }]} />
       </View>
-      <S5WaterStream status={status} teaColor={teaColor} />
-      <SmallTeacup progress={progress} teaColor={teaColor} />
+      <S5WaterStream status={status} teaColor={pouringLiquidColor} />
+      <SmallTeacup progress={progress} teaColor={pouringLiquidColor} />
     </>
   );
 }
