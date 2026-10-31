@@ -71,7 +71,7 @@ const S3_TEA_VISUALS: Record<TeaName, S3TeaVisualData> = {
     teaContentImage: require("../../../../assets/images/teaFlow/s3-tea-content-omija.png"),
     teaContentLayout: SQUARE_TEA_CONTENT_LAYOUT,
   },
-  둥글레차: {
+  둥굴레차: {
     description: "구수한 향이 마음을 포근하게 감싸줘요",
     glowColor: createTeaGlowColor("#E2C27A"),
     teaContentImage: require("../../../../assets/images/teaFlow/s3-tea-content-solomons-seal.png"),
@@ -89,7 +89,7 @@ const S3_TEA_VISUALS: Record<TeaName, S3TeaVisualData> = {
     teaContentImage: require("../../../../assets/images/teaFlow/s3-tea-content-white-tea.png"),
     teaContentLayout: SQUARE_TEA_CONTENT_LAYOUT,
   },
-  옥수수차: {
+  옥수수수염차: {
     description: "고소한 향이 마음을 편안하게 눕혀줘요",
     glowColor: createTeaGlowColor("#C8B868"),
     teaContentImage: require("../../../../assets/images/teaFlow/s3-tea-content-corn-tea.png"),
