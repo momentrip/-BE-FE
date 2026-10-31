@@ -9,7 +9,7 @@ import { S4BreathIndicator } from "./S4BreathIndicator";
 import { S4Lantern } from "./S4Lantern";
 import { S4MudraRing } from "./S4MudraRing";
 import { S4ProgressBar } from "./S4ProgressBar";
-import { DESIGN_WIDTH, s4Assets, s4Layout } from "./s4Layout";
+import { DESIGN_WIDTH, s4Assets, s4Layout, s4MudraAssets } from "./s4Layout";
 
 type TeaSteepingFlow2BreathingProps = {
   mudraMantra: string;
@@ -32,6 +32,7 @@ export function TeaSteepingFlow2Breathing({
 }: TeaSteepingFlow2BreathingProps) {
   const breathing = useS4Breathing({ enabled: true, onDone });
   const isPause = breathing.phaseType === "pause";
+  const mudraImage = isPause ? s4MudraAssets[mudraName] ?? s4MudraAssets.default : s4MudraAssets.default;
 
   return (
     <>
@@ -42,11 +43,7 @@ export function TeaSteepingFlow2Breathing({
         <Text style={styles.phaseLabelNumber}>{breathing.cycleNumber}</Text>
       </View>
       <S4MudraRing>
-        <Image
-          resizeMode="contain"
-          source={isPause ? s4Assets.mudraPalm : s4Assets.mudraHand}
-          style={isPause ? styles.mudraPalm : styles.mudraHand}
-        />
+        <Image resizeMode="contain" source={mudraImage} style={styles.mudraImage} fadeDuration={0} />
       </S4MudraRing>
       <Text style={styles.mudraMantra}>
         {mudraName} · {mudraMantra}
@@ -63,8 +60,7 @@ export function TeaSteepingFlow2Breathing({
 }
 
 const styles = StyleSheet.create({
-  mudraHand: { width: 173, height: 173 },
-  mudraPalm: { width: 204, height: 204 },
+  mudraImage: { width: 220, height: 220 },
   phaseLabelRow: {
     position: "absolute",
     top: 196,
