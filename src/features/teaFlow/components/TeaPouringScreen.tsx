@@ -10,18 +10,21 @@ import {
   RadialGradient,
   vec,
 } from "@shopify/react-native-skia";
+import { useEffect } from "react";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 
 import { fontFamily } from "@/shared/theme";
 
-import { S5_CUP_COLORS, S5_DEFAULT_TEA_COLOR } from "../constants/s5Pouring";
+import { S5_CUP_COLORS, S5_DEFAULT_TEA_COLOR, S5_LIQUID_MAX_OPACITY } from "../constants/s5Pouring";
 import { useS5PouringProgress } from "../hooks/useS5PouringProgress";
 import { useTeaPouring } from "../hooks/useTeaPouring";
+import { S5WaterStream } from "./S5WaterStream";
 import { Z_TWIST_THRESHOLDS } from "../utils/pouringThresholds";
 import {
   getS5DisplayAngleDegrees,
   getS5EffectivePouringState,
 } from "../utils/s5PouringState";
-import { getS5LiquidOpacity } from "../utils/s5LiquidDisplay";
+import { getS5LiquidFillHeight, getS5LiquidOpacity } from "../utils/s5LiquidDisplay";
 import type { TeaPouringStatus } from "../utils/zTwistState";
 
 const DESIGN_WIDTH = 393;
@@ -32,6 +35,9 @@ const POINTER_WIDTH = 26;
 const POINTER_EDGE_PADDING = 1;
 const POINTER_MIN_LEFT = 57;
 const POINTER_MAX_LEFT = ANGLE_BAR_LEFT + ANGLE_BAR_WIDTH - POINTER_WIDTH / 2;
+const SMALL_CUP_LIQUID_MAX_HEIGHT = 27;
+const LIQUID_WOBBLE_AMPLITUDE = 1.5;
+const LIQUID_WOBBLE_DURATION_MS = 700;
 
 const screenAssets = {
   backgroundLayer1: require("@/assets/images/teaFlow/s5-background-layer-1.png"),
@@ -153,13 +159,34 @@ function RadialGlow({ color, style }: RadialGlowProps) {
 }
 
 function SmallTeacup({ progress, teaColor }: Pick<PouringVisualProps, "progress" | "teaColor">) {
+  const fillHeight = getS5LiquidFillHeight(progress, SMALL_CUP_LIQUID_MAX_HEIGHT);
+  const baseTop = SMALL_CUP_LIQUID_MAX_HEIGHT - fillHeight;
+
+  const wobble = useSharedValue(0);
+  useEffect(() => {
+    wobble.value = withRepeat(
+      withTiming(1, { duration: LIQUID_WOBBLE_DURATION_MS, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+  }, [wobble]);
+
+  const wobbleStyle = useAnimatedStyle(() => ({
+    top: baseTop + (wobble.value - 0.5) * 2 * LIQUID_WOBBLE_AMPLITUDE,
+  }));
+
   return (
     <View style={styles.smallCupClip}>
       <View style={styles.smallCupLiquidClip}>
-        <View
+        <Animated.View
           style={[
             styles.teacupTeaSurface,
-            { backgroundColor: teaColor, opacity: getS5LiquidOpacity(progress) },
+            {
+              backgroundColor: teaColor,
+              opacity: S5_LIQUID_MAX_OPACITY,
+              height: fillHeight,
+            },
+            wobbleStyle,
           ]}
         />
       </View>
@@ -194,6 +221,7 @@ function PouringVisual({ status, progress, teaColor }: PouringVisualProps) {
       <View style={styles.teapotFrame}>
         <Image source={screenAssets.teapot} style={[styles.teapot, { transform: [{ rotate: rotation }] }]} />
       </View>
+      <S5WaterStream status={status} teaColor={teaColor} />
       <SmallTeacup progress={progress} teaColor={teaColor} />
     </>
   );
@@ -411,10 +439,8 @@ const styles = StyleSheet.create({
   },
   teacupTeaSurface: {
     position: "absolute",
-    top: 0,
     left: 0,
     width: 76,
-    height: 27,
     borderRadius: 38,
   },
   instructionMessage: {
