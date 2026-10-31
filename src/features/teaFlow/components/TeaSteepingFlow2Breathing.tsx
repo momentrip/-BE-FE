@@ -73,12 +73,12 @@ const styles = StyleSheet.create({
   },
   phaseLabelText: {
     color: "#ffffff",
-    fontFamily: fontFamily.main,
+    fontFamily: fontFamily.sub3,
     fontSize: 42,
   },
   phaseLabelNumber: {
     color: "#b8b872",
-    fontFamily: fontFamily.main,
+    fontFamily: fontFamily.sub3,
     fontSize: 26,
   },
   mudraMantra: {
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     width: DESIGN_WIDTH,
     textAlign: "center",
     color: "#d9c9a0",
-    fontFamily: fontFamily.sub1,
+    fontFamily: fontFamily.pretendardRegular,
     fontSize: 13,
   },
 });

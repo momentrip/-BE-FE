@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     width: DESIGN_WIDTH,
     textAlign: "center",
     color: "#7e7e7e",
-    fontFamily: fontFamily.sub1,
+    fontFamily: fontFamily.pretendardSemiBold,
     fontSize: 15,
   },
   message: {
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     width: DESIGN_WIDTH,
     textAlign: "center",
     color: "#dfdfdf",
-    fontFamily: fontFamily.sub1,
+    fontFamily: fontFamily.sub3,
     fontSize: 20,
     lineHeight: 28,
   },

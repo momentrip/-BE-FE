@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     top: 709,
     left: 45,
     color: "#d9c9a0",
-    fontFamily: fontFamily.sub1,
+    fontFamily: fontFamily.pretendardSemiBold,
     fontSize: 12,
   },
   progressTrack: {
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     width: DESIGN_WIDTH,
     textAlign: "center",
     color: "#adadad",
-    fontFamily: fontFamily.sub1,
+    fontFamily: fontFamily.pretendardMedium,
     fontSize: 11,
   },
 });
