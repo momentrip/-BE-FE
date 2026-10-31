@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     left: 24,
     width: 342,
     color: "#ffffff",
-    fontFamily: fontFamily.pretendardRegular,
+    fontFamily: fontFamily.sub3,
     fontSize: 16,
     lineHeight: 22.4,
     textAlign: "center",
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   },
   completedTitle: {
     color: "rgba(237, 227, 204, 0.95)",
-    fontFamily: fontFamily.pretendardRegular,
+    fontFamily: fontFamily.sub3,
     fontSize: 20,
     lineHeight: 32,
     textAlign: "center",

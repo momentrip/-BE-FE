@@ -899,7 +899,7 @@ const styles = StyleSheet.create({
     left: 24,
     width: 342,
     color: "#dcdcdc",
-    fontFamily: fontFamily.pretendardBold,
+    fontFamily: fontFamily.sub3,
     fontSize: 14,
     lineHeight: 23,
     textAlign: "center",
