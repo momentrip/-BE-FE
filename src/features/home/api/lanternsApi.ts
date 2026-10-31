@@ -51,6 +51,13 @@ export async function getTodayLanterns(): Promise<LanternFeedItem[]> {
  * 사용처: home
  */
 export function subscribeNewLanterns(onInsert: (item: LanternFeedItem) => void): () => void {
+  // Fast Refresh 등으로 이전 채널이 정리되지 않고 남아있으면 같은 토픽으로 다시 구독할 때
+  // "cannot add 'postgres_changes' callbacks ... after subscribe()" 에러가 난다. 먼저 정리한다.
+  const stale = supabase.getChannels().find((existing) => existing.topic === "realtime:lanterns-insert");
+  if (stale) {
+    supabase.removeChannel(stale);
+  }
+
   const channel = supabase
     .channel("lanterns-insert")
     .on(
