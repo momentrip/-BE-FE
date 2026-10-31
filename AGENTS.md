@@ -42,6 +42,7 @@
 | 테스트 | jest-expo |
 
 - **Expo Go 호환성을 반드시 유지한다.** 커스텀 네이티브 모듈 추가, `expo prebuild` 실행, `ios/`·`android/` 커밋 금지.
+  - 예외: 시연용 Release 빌드는 PM의 맥북에서만 `npx expo run:ios --configuration Release`(내부에서 prebuild 실행)로 만들어 무료 Apple ID로 설치한다. 생성된 `ios/`는 로컬에만 두고 커밋하지 않는다 (`.gitignore`에 포함). 개발은 계속 Expo Go 기준으로 한다.
 - 위 표에 없는 라이브러리를 설치하지 않는다.
 - 별도 백엔드 서버(Spring 등)는 만들지 않는다.
 
