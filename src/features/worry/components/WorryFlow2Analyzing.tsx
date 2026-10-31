@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { fontFamily } from "@/shared/theme";
 
 import { BackButton } from "./BackButton";
-import { DESIGN_WIDTH, worryLayoutStyles } from "./worryLayout";
+import { DESIGN_WIDTH, WORRY_RESULT_TEXT_WIDTH, worryLayoutStyles } from "./worryLayout";
 
 const screenAssets = {
   flow2: require("@/assets/images/worry/s2_flow2.png"),
@@ -36,7 +36,7 @@ export function WorryFlow2Analyzing({
       <Text style={styles.analyzingMessage}>작성해주신 번뇌를{"\n"}분석 중이에요</Text>
 
       <Image source={screenAssets.chip} style={styles.chipImage} resizeMode="cover" />
-      <Text style={styles.chipText} numberOfLines={2}>
+      <Text style={styles.chipText} numberOfLines={6}>
         {worryText}
       </Text>
 
@@ -83,7 +83,8 @@ const styles = StyleSheet.create({
   chipText: {
     position: "absolute",
     top: 473,
-    width: DESIGN_WIDTH,
+    left: (DESIGN_WIDTH - WORRY_RESULT_TEXT_WIDTH) / 2,
+    width: WORRY_RESULT_TEXT_WIDTH,
     color: "#a9a9a9",
     fontFamily: fontFamily.pretendardExtraBold,
     fontSize: 17,
