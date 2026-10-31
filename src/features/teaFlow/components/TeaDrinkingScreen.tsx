@@ -6,8 +6,11 @@ import {
   BlurMask,
   Canvas,
   Group,
+  LinearGradient,
   Oval,
   RadialGradient,
+  Rect,
+  RoundedRect,
   vec,
 } from "@shopify/react-native-skia";
 import Animated, {
@@ -59,6 +62,39 @@ function LightSource() {
         />
         <BlurMask blur={3} style="normal" />
       </Oval>
+      <Group origin={vec(197, 233)} transform={[{ rotate: -7 * Math.PI / 180 }]}>
+        <Rect x={167} y={-47} width={60} height={560}>
+          <LinearGradient
+            colors={["rgba(255,240,210,0.2)", "rgba(255,240,210,0.05)", "rgba(255,240,210,0)"]}
+            end={vec(197, 513)}
+            positions={[0, 0.6, 1]}
+            start={vec(197, -47)}
+          />
+          <BlurMask blur={4} style="normal" />
+        </Rect>
+      </Group>
+      <Group origin={vec(196, 235)} transform={[{ rotate: 9 * Math.PI / 180 }]}>
+        <Rect x={181} y={-45} width={30} height={560}>
+          <LinearGradient
+            colors={["rgba(255,240,210,0.2)", "rgba(255,240,210,0.05)", "rgba(255,240,210,0)"]}
+            end={vec(196, 515)}
+            positions={[0, 0.6, 1]}
+            start={vec(196, -45)}
+          />
+          <BlurMask blur={4} style="normal" />
+        </Rect>
+      </Group>
+      <Group origin={vec(195, 235)} opacity={0.84} transform={[{ rotate: 2 * Math.PI / 180 }]}>
+        <Rect x={150} y={-45} width={90} height={560}>
+          <LinearGradient
+            colors={["rgba(255,240,210,0.2)", "rgba(255,240,210,0.05)", "rgba(255,240,210,0)"]}
+            end={vec(195, 515)}
+            positions={[0, 0.6, 1]}
+            start={vec(195, -45)}
+          />
+          <BlurMask blur={4} style="normal" />
+        </Rect>
+      </Group>
     </Canvas>
   );
 }
@@ -82,18 +118,26 @@ function Lantern({ top }: LanternProps) {
   return (
     <Animated.View pointerEvents="none" style={[styles.lantern, animatedStyle]}>
       <Canvas style={styles.lanternGlow}>
-        <Group opacity={1}>
-          <Oval x={0} y={0} width={120} height={120}>
-            <RadialGradient
-              c={vec(60, 60)}
-              colors={["rgba(138,112,38,0.53)", "rgba(138,112,38,0.15)", "rgba(138,112,38,0)"]}
-              positions={[0, 0.4, 0.7]}
-              r={60}
-            />
-          </Oval>
-        </Group>
+        <Oval x={0} y={0} width={120} height={120}>
+          <RadialGradient
+            c={vec(60, 60)}
+            colors={["rgba(138,112,38,0.53)", "rgba(138,112,38,0.15)", "rgba(138,112,38,0)"]}
+            positions={[0, 0.4, 0.7]}
+            r={60}
+          />
+        </Oval>
+        <RoundedRect x={50} y={47} width={20} height={26} r={8} opacity={0.33} color="#efcb66">
+          <BlurMask blur={10} style="normal" />
+        </RoundedRect>
+        <RoundedRect x={50} y={47} width={20} height={26} r={8}>
+          <RadialGradient
+            c={vec(60, 64.68)}
+            colors={["#fff4c8", "#f7e097", "#efcb66", "#bd9e46", "#8a7026"]}
+            positions={[0, 0.275, 0.55, 0.775, 1]}
+            r={20.312}
+          />
+        </RoundedRect>
       </Canvas>
-      <View style={styles.lanternFlame} />
     </Animated.View>
   );
 }
@@ -214,7 +258,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     width: DESIGN_WIDTH,
-    height: 220,
+    height: 525,
   },
   milestones: {
     position: "absolute",
@@ -249,19 +293,6 @@ const styles = StyleSheet.create({
     left: 0,
     width: 120,
     height: 120,
-  },
-  lanternFlame: {
-    width: 20,
-    height: 26,
-    borderTopLeftRadius: 7,
-    borderTopRightRadius: 7,
-    borderBottomLeftRadius: 9,
-    borderBottomRightRadius: 9,
-    backgroundColor: "#efcb66",
-    shadowColor: "#efcb66",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
   },
   teacupGroup: {
     position: "absolute",
