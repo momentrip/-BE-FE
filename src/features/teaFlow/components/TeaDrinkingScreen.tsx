@@ -21,6 +21,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { getCurrentSession } from "@/features/session";
 import { fontFamily } from "@/shared/theme";
 
 import {
@@ -30,6 +31,7 @@ import {
   S6_REFLECTION_TRANSITION_DURATION_MS,
 } from "../constants/s6Drinking";
 import { useTeaDrinking } from "../hooks/useTeaDrinking";
+import { getS6TeaColor } from "../utils/getS6TeaColor";
 import { getNextTeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
 import type { TeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
 import { getTeaDrinkingPresentation } from "../utils/teaDrinkingPresentation";
@@ -142,12 +144,16 @@ function Lantern({ top }: LanternProps) {
   );
 }
 
-function Teacup() {
+type TeacupProps = {
+  teaColor: string;
+};
+
+function Teacup({ teaColor }: TeacupProps) {
   return (
     <View style={styles.teacupGroup}>
       <View style={styles.cupBodyLower} />
       <View style={styles.cupBodyUpper} />
-      <View style={styles.teaSurface} />
+      <View style={[styles.teaSurface, { backgroundColor: teaColor }]} />
       <Image source={assets.teacup} style={styles.teacup} />
     </View>
   );
@@ -165,6 +171,7 @@ export function TeaDrinkingScreen({ onCompleted }: TeaDrinkingScreenProps) {
   const completionCalledRef = useRef(false);
   const [flowStep, setFlowStep] = useState<TeaDrinkingFlowStep>("drinking");
   const presentation = getTeaDrinkingPresentation(drinking);
+  const teaColor = getS6TeaColor(getCurrentSession().tea);
   const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
 
   useEffect(() => {
@@ -205,7 +212,7 @@ export function TeaDrinkingScreen({ onCompleted }: TeaDrinkingScreenProps) {
             <Text style={[styles.milestoneLabel, styles.twoSipsLabel]}>두 모금</Text>
             <Text style={[styles.milestoneLabel, styles.oneSipLabel]}>한 모금</Text>
             <Lantern top={presentation.lanternTop} />
-            <Teacup />
+            <Teacup teaColor={teaColor} />
 
             <View style={styles.sipDots}>
               {[0, 1, 2].map((dot) => (
@@ -326,7 +333,6 @@ const styles = StyleSheet.create({
     width: 114.679,
     height: 66.393,
     borderRadius: 57.34,
-    backgroundColor: "#9fad5d",
   },
   teacup: {
     position: "absolute",
