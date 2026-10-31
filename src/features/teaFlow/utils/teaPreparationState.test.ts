@@ -1,6 +1,8 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { S3_TEA_OPTIONS } from "../data/s3TeaOptions";
+import { getTeasByWorryKind } from "@/features/quote";
+
+import { getS3TeaOptions } from "../data/s3TeaOptions";
 import {
   INITIAL_TEA_PREPARATION_STATE,
   updateTeaPreparationState,
@@ -41,9 +43,21 @@ describe("updateTeaPreparationState", () => {
   });
 });
 
-describe("S3_TEA_OPTIONS", () => {
+describe("getS3TeaOptions", () => {
+  const allTeaOptions = getS3TeaOptions(
+    getTeasByWorryKind({ worryKind: "unsure", hour: 12 }),
+  );
+
   it("차 종류별 display data와 내부 content image를 각각 제공한다", () => {
-    const [chrysanthemum, omija] = S3_TEA_OPTIONS;
+    const chrysanthemum = allTeaOptions.find((tea) => tea.key === "chrysanthemum");
+    const omija = allTeaOptions.find((tea) => tea.key === "omija");
+
+    expect(chrysanthemum).toBeDefined();
+    expect(omija).toBeDefined();
+
+    if (!chrysanthemum || !omija) {
+      return;
+    }
 
     expect(chrysanthemum.name).not.toBe(omija.name);
     expect(chrysanthemum.description).not.toBe(omija.description);
@@ -58,6 +72,28 @@ describe("S3_TEA_OPTIONS", () => {
       primary: "#EF5D62",
       secondary: "#D9353F",
       edge: "#6F1820",
+    });
+  });
+
+  it("19개 차 모두 자기 TeaId의 content image와 glow 색을 제공한다", () => {
+    expect(allTeaOptions).toHaveLength(19);
+    allTeaOptions.forEach((tea) => {
+      expect(tea.teaContentImage).toEqual(
+        expect.objectContaining({
+          testUri: expect.stringContaining(`s3-tea-content-${tea.key}.png`),
+        }),
+      );
+      expect(tea.glowColor.primary).toMatch(/^#[0-9A-F]{6}$/);
+      expect(tea.glowColor.secondary).toMatch(/^#[0-9A-F]{6}$/);
+      expect(tea.glowColor.edge).toMatch(/^#[0-9A-F]{6}$/);
+    });
+  });
+
+  it("신규 차의 glow는 TEA_COLOR와 같은 값 하나를 쓴다", () => {
+    expect(allTeaOptions.find((tea) => tea.key === "jujube-tea")?.glowColor).toEqual({
+      primary: "#6E2C16",
+      secondary: "#6E2C16",
+      edge: "#6E2C16",
     });
   });
 });

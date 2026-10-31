@@ -5,6 +5,7 @@ import type { WorryKind } from "@/shared/constants";
 import { WORRY_KIND_LABEL } from "@/shared/constants";
 import { fontFamily } from "@/shared/theme";
 
+import { WORRY_KIND_DOT_COLOR } from "../constants/worryKindDotColor";
 import type { LanternFeedItem } from "../types";
 import type { LanternPosition } from "../utils/lanternLayout";
 import { formatRelativeTime } from "../utils/relativeTime";
@@ -35,18 +36,6 @@ function getCardPosition(slot: LanternPosition): { top: number; left: number } {
 
   return { top: clampedTop, left: clampedLeft };
 }
-
-/** 번뇌 종류별 카테고리 점 그라데이션 (안쪽 → 바깥쪽). */
-const WORRY_KIND_DOT_COLOR: Record<WorryKind, { inner: string; outer: string }> = {
-  greed_impatience: { inner: "#FFE2B0", outer: "#E0A050" },
-  wavering_temptation: { inner: "#EEF0C8", outer: "#4E5A2E" },
-  relationship_anger: { inner: "#FFD288", outer: "#D0704A" },
-  selfblame_lethargy: { inner: "#FFEDE8", outer: "#EDB8B0" },
-  anxiety_worry: { inner: "#FFF4C8", outer: "#EFCB66" },
-  overthinking: { inner: "#F2F6D0", outer: "#C4D278" },
-  career_direction: { inner: "#FFD6D2", outer: "#E0605C" },
-  unsure: { inner: "#FFFFF0", outer: "#E6EAC4" },
-};
 
 const teacupIcon = require("@/assets/images/mainpage/teacup_empty.png");
 const lanternImage = require("@/assets/images/mainpage/lantern.png");

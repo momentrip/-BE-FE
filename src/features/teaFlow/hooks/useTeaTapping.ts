@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { S3_TAP_SETTINGS } from "../constants/s3Preparation";
 import {
   completeTeaTapAnimation,
+  confirmTeaTapCompletion,
   INITIAL_TEA_TAP_ANIMATION_STATE,
   startTeaTapAnimation,
 } from "../utils/teaTapState";
@@ -14,6 +14,7 @@ type UseTeaTappingOptions = {
 };
 
 export type TeaTappingState = {
+  animationCompleted: boolean;
   animationStarted: boolean;
   completeAnimation: () => void;
   registerTap: () => void;
@@ -24,7 +25,6 @@ export function useTeaTapping({
   onCompleted,
 }: UseTeaTappingOptions): TeaTappingState {
   const completedCallbackRef = useRef(onCompleted);
-  const completionScheduledRef = useRef(false);
   const animationRef = useRef<TeaTapAnimationState>(
     INITIAL_TEA_TAP_ANIMATION_STATE,
   );
@@ -37,6 +37,17 @@ export function useTeaTapping({
 
   const registerTap = useCallback(() => {
     if (!enabled) {
+      return;
+    }
+
+    if (animationRef.current.phase === "completed") {
+      const next = confirmTeaTapCompletion(animationRef.current);
+      if (next === animationRef.current) {
+        return;
+      }
+
+      animationRef.current = next;
+      completedCallbackRef.current();
       return;
     }
 
@@ -59,20 +70,8 @@ export function useTeaTapping({
     setAnimationCompleted(true);
   }, []);
 
-  useEffect(() => {
-    if (!animationCompleted || completionScheduledRef.current) {
-      return;
-    }
-
-    completionScheduledRef.current = true;
-    const timer = setTimeout(() => {
-      completedCallbackRef.current();
-    }, S3_TAP_SETTINGS.completedStageDurationMs);
-
-    return () => clearTimeout(timer);
-  }, [animationCompleted]);
-
   return {
+    animationCompleted,
     animationStarted,
     completeAnimation,
     registerTap,

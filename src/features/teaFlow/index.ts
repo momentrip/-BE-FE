@@ -2,6 +2,8 @@
 
 export { TeaPouringScreen } from "./components/TeaPouringScreen";
 export type { TeaPouringScreenProps } from "./components/TeaPouringScreen";
+export { TeaDrinkingScreen } from "./components/TeaDrinkingScreen";
+export type { TeaDrinkingScreenProps } from "./components/TeaDrinkingScreen";
 export { TeaPreparationScreen } from "./components/TeaPreparationScreen";
 export type { TeaPreparationScreenProps } from "./components/TeaPreparationScreen";
 export { useTeaDrinking } from "./hooks/useTeaDrinking";
@@ -15,3 +17,5 @@ export type {
   TeaPouringState,
 } from "./hooks/useTeaPouring";
 export { getTeaLabel } from "./utils/getTeaLabel";
+export { TeaSteepingScreen } from "./components/TeaSteepingScreen";
+export type { TeaSteepingScreenProps } from "./components/TeaSteepingScreen";

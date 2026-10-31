@@ -2,6 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 
 import {
   completeTeaTapAnimation,
+  confirmTeaTapCompletion,
   INITIAL_TEA_TAP_ANIMATION_STATE,
   startTeaTapAnimation,
 } from "./teaTapState";
@@ -29,5 +30,24 @@ describe("tea tap animation", () => {
     expect(completed).toEqual({ phase: "completed" });
     expect(startTeaTapAnimation(completed)).toBe(completed);
     expect(completeTeaTapAnimation(completed)).toBe(completed);
+  });
+
+  it("애니메이션 완료 전 확인 tap은 무시한다", () => {
+    const animating = startTeaTapAnimation(INITIAL_TEA_TAP_ANIMATION_STATE);
+
+    expect(confirmTeaTapCompletion(INITIAL_TEA_TAP_ANIMATION_STATE)).toBe(
+      INITIAL_TEA_TAP_ANIMATION_STATE,
+    );
+    expect(confirmTeaTapCompletion(animating)).toBe(animating);
+  });
+
+  it("완료 상태의 첫 확인 tap만 소비한다", () => {
+    const completed = completeTeaTapAnimation(
+      startTeaTapAnimation(INITIAL_TEA_TAP_ANIMATION_STATE),
+    );
+    const confirmed = confirmTeaTapCompletion(completed);
+
+    expect(confirmed).toEqual({ phase: "confirmed" });
+    expect(confirmTeaTapCompletion(confirmed)).toBe(confirmed);
   });
 });

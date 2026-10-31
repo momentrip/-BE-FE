@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer } from "react";
 import {
   Image,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -29,16 +30,21 @@ import {
 
 import { fontFamily } from "@/shared/theme";
 import { useImpactShared } from "@/shared/sensors";
+import { WORRY_KIND_LABEL } from "@/shared/constants";
+import { getTeasByWorryKind } from "@/features/quote";
+import { getCurrentSession } from "@/features/session";
 
 import { S3_TEA_BAG_LAYOUT } from "../data/s3TeaBagLayout";
 import { S3_TAP_SETTINGS } from "../constants/s3Preparation";
-import { S3_TEA_OPTIONS } from "../data/s3TeaOptions";
+import { getS3TeaOptions } from "../data/s3TeaOptions";
 import type { S3TeaDisplayData, S3TeaGlowColor } from "../data/s3TeaOptions";
 import { useTeaTapping } from "../hooks/useTeaTapping";
 import {
   INITIAL_TEA_PREPARATION_STATE,
   updateTeaPreparationState,
 } from "../utils/teaPreparationState";
+import { saveSelectedTea } from "../utils/saveSelectedTea";
+import { S4BlinkingText } from "./S4BlinkingText";
 
 const DESIGN_WIDTH = 393;
 const DESIGN_HEIGHT = 852;
@@ -150,11 +156,13 @@ function TeaBag({
 
   return (
     <>
-      <Animated.Image
-        resizeMode="contain"
-        source={tea.teaContentImage}
-        style={[styles.teaContentImage, contentStyle]}
-      />
+      {tea.teaContentImage ? (
+        <Animated.Image
+          resizeMode="contain"
+          source={tea.teaContentImage}
+          style={[styles.teaContentImage, contentStyle]}
+        />
+      ) : null}
       <AnimatedExpoImage
         contentFit="fill"
         source={assets.teaBag}
@@ -244,26 +252,36 @@ function TeaSummary({ onChoose, onOpenOptions, tea }: TeaSummaryProps) {
 }
 
 type TeaOptionsSheetProps = {
+  isNight: boolean;
   onClose: () => void;
   onConfirm: () => void;
   onSelect: (tea: S3TeaDisplayData) => void;
+  options: readonly S3TeaDisplayData[];
   selectedTea: S3TeaDisplayData;
+  title: string;
 };
 
 function TeaOptionsSheet({
+  isNight,
   onClose,
   onConfirm,
   onSelect,
+  options,
   selectedTea,
+  title,
 }: TeaOptionsSheetProps) {
   return (
     <View style={StyleSheet.absoluteFill}>
       <Pressable accessibilityLabel="차 선택 닫기" onPress={onClose} style={styles.dim} />
       <View style={styles.bottomSheet}>
         <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>불안·걱정에 어울리는 차</Text>
-        <View style={styles.teaOptions}>
-          {S3_TEA_OPTIONS.map((tea) => {
+        <Text style={styles.sheetTitle}>{title}</Text>
+        <ScrollView
+          contentContainerStyle={styles.teaOptionsContent}
+          showsVerticalScrollIndicator={false}
+          style={styles.teaOptions}
+        >
+          {options.map((tea) => {
             const selected = tea.key === selectedTea.key;
             return (
               <Pressable
@@ -283,8 +301,10 @@ function TeaOptionsSheet({
               </Pressable>
             );
           })}
-        </View>
-        <Text style={styles.sheetNote}>밤 9시가 넘어서 카페인 없는 차만 보여드려요</Text>
+        </ScrollView>
+        {isNight ? (
+          <Text style={styles.sheetNote}>밤 9시가 넘어서 카페인 없는 차만 보여드려요</Text>
+        ) : null}
         <Pressable accessibilityRole="button" onPress={onConfirm} style={styles.sheetConfirmButton}>
           <Text style={styles.primaryButtonText}>이 차로 할게요</Text>
         </Pressable>
@@ -326,6 +346,7 @@ function SensorGuide({ onAllow, onFallback, requesting }: SensorGuideProps) {
 }
 
 type TappingVisualProps = {
+  animationCompleted: boolean;
   animationStarted: boolean;
   enabled: boolean;
   onAnimationCompleted: () => void;
@@ -334,6 +355,7 @@ type TappingVisualProps = {
 };
 
 function TappingVisual({
+  animationCompleted,
   animationStarted,
   enabled,
   onAnimationCompleted,
@@ -387,9 +409,11 @@ function TappingVisual({
 
   return (
     <Pressable
-      accessibilityHint="화면을 한 번 두드리면 찻잎 넣기가 시작됩니다"
-      accessibilityLabel="찻잎 두드리기"
-      disabled={!enabled || animationStarted}
+      accessibilityHint={animationCompleted
+        ? "화면을 한 번 누르면 차 우리기로 이동합니다"
+        : "화면을 한 번 두드리면 찻잎 넣기가 시작됩니다"}
+      accessibilityLabel={animationCompleted ? "차 우리기로 이동" : "찻잎 두드리기"}
+      disabled={!enabled || (animationStarted && !animationCompleted)}
       onPress={onTap}
       style={StyleSheet.absoluteFill}
     >
@@ -406,7 +430,11 @@ function TappingVisual({
         tea={tea}
       />
       <Animated.Image source={assets.teapot} style={[styles.absoluteAsset, teapotStyle]} />
-      <Text style={styles.tapInstruction}>찻잎을 두드려 다관에 넣으세요</Text>
+      {animationCompleted ? (
+        <S4BlinkingText style={styles.tapInstruction} text="화면을 클릭하세요" />
+      ) : (
+        <Text style={styles.tapInstruction}>찻잎을 두드려 다관에 넣으세요</Text>
+      )}
     </Pressable>
   );
 }
@@ -419,18 +447,29 @@ function TappingVisual({
  */
 export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps) {
   const { width, height } = useWindowDimensions();
-  const [preparation, dispatch] = useReducer(
-    updateTeaPreparationState,
-    INITIAL_TEA_PREPARATION_STATE,
-  );
+  const recommendation = useMemo(() => {
+    const worryKind = getCurrentSession().worryKind ?? "unsure";
+    const hour = new Date().getHours();
+    const options = getS3TeaOptions(getTeasByWorryKind({ worryKind, hour }));
+
+    return {
+      isNight: hour >= 21 || hour < 5,
+      options,
+      title: `${WORRY_KIND_LABEL[worryKind]}에 어울리는 차`,
+    };
+  }, []);
+  const [preparation, dispatch] = useReducer(updateTeaPreparationState, {
+    ...INITIAL_TEA_PREPARATION_STATE,
+    selectedTeaKey: recommendation.options[0].key,
+  });
   const {
     requestPermission,
     status: permissionStatus,
   } = useImpactShared({ enabled: false });
   const selectedTea = useMemo(
-    () => S3_TEA_OPTIONS.find((tea) => tea.key === preparation.selectedTeaKey) ??
-      S3_TEA_OPTIONS[0],
-    [preparation.selectedTeaKey],
+    () => recommendation.options.find((tea) => tea.key === preparation.selectedTeaKey) ??
+      recommendation.options[0],
+    [preparation.selectedTeaKey, recommendation.options],
   );
   const handleCompleted = useCallback(() => {
     dispatch({ type: "complete" });
@@ -451,6 +490,11 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
     dispatch({ type: "startTapping" });
   }, []);
 
+  const confirmSelectedTea = useCallback(() => {
+    saveSelectedTea(selectedTea.key);
+    dispatch({ type: "confirmTea" });
+  }, [selectedTea.key]);
+
   const tappingVisible = preparation.phase === "tapping" || preparation.phase === "completed";
 
   return (
@@ -459,6 +503,7 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
       <View style={[styles.canvas, { transform: [{ scale }] }]}>
         {tappingVisible ? (
           <TappingVisual
+            animationCompleted={tapping.animationCompleted}
             animationStarted={tapping.animationStarted}
             enabled={preparation.phase === "tapping"}
             onAnimationCompleted={tapping.completeAnimation}
@@ -470,16 +515,19 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
             <Image source={assets.backgroundLayer3} style={styles.backgroundLayer3} />
             <StepIndicator />
             <TeaSummary
-              onChoose={() => dispatch({ type: "confirmTea" })}
+              onChoose={confirmSelectedTea}
               onOpenOptions={() => dispatch({ type: "openOptions" })}
               tea={selectedTea}
             />
             {preparation.optionsOpen && (
               <TeaOptionsSheet
+                isNight={recommendation.isNight}
                 onClose={() => dispatch({ type: "closeOptions" })}
-                onConfirm={() => dispatch({ type: "confirmTea" })}
+                onConfirm={confirmSelectedTea}
                 onSelect={(tea) => dispatch({ type: "selectTea", teaKey: tea.key })}
+                options={recommendation.options}
                 selectedTea={selectedTea}
+                title={recommendation.title}
               />
             )}
             {preparation.phase === "sensorGuide" && (
@@ -566,7 +614,7 @@ const styles = StyleSheet.create({
     left: 24,
     width: 342,
     color: "rgba(237,227,204,0.95)",
-    fontFamily: fontFamily.pretendardRegular,
+    fontFamily: fontFamily.sub3,
     fontSize: 37,
     lineHeight: 45,
     textAlign: "center",
@@ -617,7 +665,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: "#1a1712",
-    fontFamily: fontFamily.pretendardRegular,
+    fontFamily: fontFamily.sub3,
     fontSize: 20,
     lineHeight: 29,
     textAlign: "center",
@@ -674,7 +722,7 @@ const styles = StyleSheet.create({
     left: 24,
     width: 345,
     color: "rgba(255,255,255,0.95)",
-    fontFamily: fontFamily.pretendardRegular,
+    fontFamily: fontFamily.sub3,
     fontSize: 16,
     lineHeight: 27,
     textAlign: "center",
@@ -684,6 +732,9 @@ const styles = StyleSheet.create({
     top: 76,
     left: 24,
     width: 345,
+    height: 140,
+  },
+  teaOptionsContent: {
     gap: 10,
   },
   teaOption: {
@@ -704,7 +755,7 @@ const styles = StyleSheet.create({
   },
   optionName: {
     color: "#d9cdb2",
-    fontFamily: fontFamily.pretendardRegular,
+    fontFamily: fontFamily.sub3,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -773,7 +824,7 @@ const styles = StyleSheet.create({
     left: 22,
     width: 286,
     color: "#ede3cc",
-    fontFamily: fontFamily.pretendardRegular,
+    fontFamily: fontFamily.sub3,
     fontSize: 18,
     lineHeight: 26,
     textAlign: "center",

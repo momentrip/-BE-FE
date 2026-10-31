@@ -1,27 +1,35 @@
 import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { StyleProp, ViewStyle } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { Image as ExpoImage } from "expo-image";
 import {
   Canvas,
-  Group,
-  LinearGradient,
   Oval,
   Path,
   RadialGradient,
   vec,
 } from "@shopify/react-native-skia";
+import { useEffect, useRef } from "react";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 
+import { getCurrentSession } from "@/features/session";
 import { fontFamily } from "@/shared/theme";
 
-import { S5_CUP_COLORS, S5_DEFAULT_TEA_COLOR } from "../constants/s5Pouring";
+import {
+  S5_COMPLETED_DISPLAY_DURATION_MS,
+  S5_CUP_COLORS,
+  S5_LIQUID_MAX_OPACITY,
+} from "../constants/s5Pouring";
 import { useS5PouringProgress } from "../hooks/useS5PouringProgress";
 import { useTeaPouring } from "../hooks/useTeaPouring";
-import { Z_TWIST_THRESHOLDS } from "../utils/pouringThresholds";
+import { S5WaterStream } from "./S5WaterStream";
+import { getS5GaugeIndicatorLeft } from "../utils/s5AngleGauge";
 import {
   getS5DisplayAngleDegrees,
   getS5EffectivePouringState,
 } from "../utils/s5PouringState";
-import { getS5LiquidOpacity } from "../utils/s5LiquidDisplay";
+import { getS5LiquidFillHeight, getS5LiquidOpacity } from "../utils/s5LiquidDisplay";
+import { getS5TeaColor } from "../utils/getS5TeaColor";
 import type { TeaPouringStatus } from "../utils/zTwistState";
 
 const DESIGN_WIDTH = 393;
@@ -29,9 +37,11 @@ const DESIGN_HEIGHT = 852;
 const ANGLE_BAR_LEFT = 65;
 const ANGLE_BAR_WIDTH = 260;
 const POINTER_WIDTH = 26;
-const POINTER_EDGE_PADDING = 1;
 const POINTER_MIN_LEFT = 57;
 const POINTER_MAX_LEFT = ANGLE_BAR_LEFT + ANGLE_BAR_WIDTH - POINTER_WIDTH / 2;
+const SMALL_CUP_LIQUID_MAX_HEIGHT = 27;
+const LIQUID_WOBBLE_AMPLITUDE = 1.5;
+const LIQUID_WOBBLE_DURATION_MS = 700;
 
 const screenAssets = {
   backgroundLayer1: require("@/assets/images/teaFlow/s5-background-layer-1.png"),
@@ -40,6 +50,7 @@ const screenAssets = {
   teapot: require("@/assets/images/teaFlow/s5-teapot.png"),
   teacup: require("@/assets/images/teaFlow/s5-teacup.png"),
   fullTeacup: require("@/assets/images/teaFlow/s5-teacup-full.png"),
+  anglePointer: require("@/assets/images/teaFlow/s5-angle-pointer.svg"),
   calibrationIcon: require("@/assets/images/teaFlow/s5-calibration-icon.png"),
 } as const;
 
@@ -47,39 +58,11 @@ const SMALL_CUP_BODY_PATH =
   "M1 10.5L0 2.5L3 4L5 5.5L8 7L10.5 8L14.5 9L20 10.5L26 11.5L34 12.5H42L50.5 12L59.5 10.5L66.5 9L71.5 7.5L79 3.5L84 0V3L83 8.5L81 15L79 21L76.5 28L73.5 33.5L70.5 38L66.5 43.5L61 48L57.5 49.5L53 51L48 52H34.5L31.5 51.5L27.5 51L25 49.5L22.5 49L20 47L18 44.5L14 39.5L10.5 34L8 29.5L5.5 24L3 18L1 10.5Z";
 const SMALL_CUP_RIM_PATH =
   "M4 0L0 1.5L0.5 3L3 4.5L5.5 6L8 7L11.5 8.5L14.5 9.5L19 10.5L23 11L28 12L32 12.5H45L50.5 12L59 11L65 9.5L70 8L74.5 5.5L77.5 3.5L75 0L71.5 2.5L63 5.5L57.5 7L48.5 8H28.5L24.5 7L20 6.5L15.5 5L11 3.5L7.5 2L4 0Z";
-const ANGLE_POINTER_BODY_PATH =
-  "M0 4C0 2.89543 0.895431 2 2 2H24C25.1046 2 26 2.89543 26 4V6C26 12.6274 20.6274 18 14 18H12C5.37258 18 0 12.6274 0 6V4Z";
-const ANGLE_POINTER_RIM_PATH =
-  "M0 3.5C0 1.567 1.567 0 3.5 0H22.5C24.433 0 26 1.567 26 3.5C26 5.433 24.433 7 22.5 7H3.5C1.567 7 0 5.433 0 3.5Z";
-
 const messageByStatus: Record<TeaPouringStatus, string> = {
   idle: "다관을 기울여 찻잔에 따르세요",
   pouring: "좋아요, 그대로",
   tooFast: "너무 급해요 · 조금 세워주세요",
 };
-
-function getVisualAngle(status: TeaPouringStatus, displayAngleDegrees: number): number {
-  const absoluteTwist = Math.abs(displayAngleDegrees);
-  const idleLimit = Z_TWIST_THRESHOLDS.neutralDeadZoneDegrees;
-  const tooFastLimit = Z_TWIST_THRESHOLDS.tooFastMinAbsDegrees;
-
-  if (status === "idle") {
-    return Math.min(20, (absoluteTwist / idleLimit) * 20);
-  }
-
-  if (status === "pouring") {
-    const pouringRatio = (absoluteTwist - idleLimit) / (tooFastLimit - idleLimit);
-    return 20 + Math.min(1, Math.max(0, pouringRatio)) * 30;
-  }
-
-  const tooFastRatio = (absoluteTwist - tooFastLimit) / (90 - tooFastLimit);
-  return 50 + Math.min(1, Math.max(0, tooFastRatio)) * 40;
-}
-
-function getPointerLeft(status: TeaPouringStatus, displayAngleDegrees: number): number {
-  const visualAngle = getVisualAngle(status, displayAngleDegrees);
-  return POINTER_MIN_LEFT + (visualAngle / 90) * (POINTER_MAX_LEFT - POINTER_MIN_LEFT);
-}
 
 function StepIndicator() {
   return (
@@ -101,29 +84,20 @@ type AngleBarProps = {
 };
 
 function AngleBar({ displayAngleDegrees, status }: AngleBarProps) {
-  const pointerLeft = getPointerLeft(status, displayAngleDegrees);
+  const pointerLeft = getS5GaugeIndicatorLeft({
+    displayAngleDegrees,
+    maxLeft: POINTER_MAX_LEFT,
+    minLeft: POINTER_MIN_LEFT,
+    status,
+  });
 
   return (
     <View style={styles.angleArea}>
-      <Canvas
-        style={[styles.anglePointer, { left: pointerLeft - POINTER_EDGE_PADDING }]}
-      >
-        <Group
-          transform={[
-            { translateX: POINTER_EDGE_PADDING },
-            { translateY: POINTER_EDGE_PADDING },
-          ]}
-        >
-          <Path path={ANGLE_POINTER_BODY_PATH}>
-            <LinearGradient
-              start={vec(13, 2)}
-              end={vec(13, 18)}
-              colors={["#eae5da", "#a9a296"]}
-            />
-          </Path>
-          <Path path={ANGLE_POINTER_RIM_PATH} color="#d8d1c3" />
-        </Group>
-      </Canvas>
+      <ExpoImage
+        contentFit="fill"
+        source={screenAssets.anglePointer}
+        style={[styles.anglePointer, { left: pointerLeft }]}
+      />
       <View style={styles.angleBar}>
         <View style={styles.idleRange} />
         <View style={styles.pouringRange} />
@@ -153,13 +127,34 @@ function RadialGlow({ color, style }: RadialGlowProps) {
 }
 
 function SmallTeacup({ progress, teaColor }: Pick<PouringVisualProps, "progress" | "teaColor">) {
+  const fillHeight = getS5LiquidFillHeight(progress, SMALL_CUP_LIQUID_MAX_HEIGHT);
+  const baseTop = SMALL_CUP_LIQUID_MAX_HEIGHT - fillHeight;
+
+  const wobble = useSharedValue(0);
+  useEffect(() => {
+    wobble.value = withRepeat(
+      withTiming(1, { duration: LIQUID_WOBBLE_DURATION_MS, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+  }, [wobble]);
+
+  const wobbleStyle = useAnimatedStyle(() => ({
+    top: baseTop + (wobble.value - 0.5) * 2 * LIQUID_WOBBLE_AMPLITUDE,
+  }));
+
   return (
     <View style={styles.smallCupClip}>
       <View style={styles.smallCupLiquidClip}>
-        <View
+        <Animated.View
           style={[
             styles.teacupTeaSurface,
-            { backgroundColor: teaColor, opacity: getS5LiquidOpacity(progress) },
+            {
+              backgroundColor: teaColor,
+              opacity: S5_LIQUID_MAX_OPACITY,
+              height: fillHeight,
+            },
+            wobbleStyle,
           ]}
         />
       </View>
@@ -194,6 +189,7 @@ function PouringVisual({ status, progress, teaColor }: PouringVisualProps) {
       <View style={styles.teapotFrame}>
         <Image source={screenAssets.teapot} style={[styles.teapot, { transform: [{ rotate: rotation }] }]} />
       </View>
+      <S5WaterStream status={status} teaColor={teaColor} />
       <SmallTeacup progress={progress} teaColor={teaColor} />
     </>
   );
@@ -225,17 +221,25 @@ function CompletedVisual({ teaColor }: CompletedVisualProps) {
 }
 
 export type TeaPouringScreenProps = {
-  /** 추천된 차의 액체 표시 색상. Tea 데이터가 연결되면 해당 색상만 전달한다. */
+  /**
+   * 액체 표시 색상을 직접 지정하고 싶을 때만 넘긴다. 생략하면 session에 저장된
+   * 차 id(getCurrentSession().tea)로 zen이 공개한 TEA_COLOR에서 자동으로 찾는다.
+   */
   teaColor?: string;
+  /** 완료 화면을 잠시 표시한 뒤 다음 차 마시기 화면으로 이동할 때 호출한다. */
+  onCompleted?: () => void;
 };
 
 /**
  * Figma S5 차 따르기 화면을 센서 상태 및 화면 전용 진행도와 연결한다.
- * @param teaColor 찻잔의 액체 표면 색상. 생략하면 Figma 기준 기본색을 사용한다.
+ * @param props.teaColor 찻잔의 액체 표면 색상. 생략하면 session에 저장된 차로 자동 결정한다.
+ * @param props.onCompleted 완료 화면을 잠시 표시한 뒤 호출할 다음 화면 callback
  * @returns S5 idle/pouring/tooFast/completed 화면
  * 사용처: src/app/tea-pouring.tsx
  */
-export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouringScreenProps) {
+export function TeaPouringScreen({ onCompleted, teaColor }: TeaPouringScreenProps) {
+  const completionCalledRef = useRef(false);
+  const resolvedTeaColor = teaColor ?? getS5TeaColor(getCurrentSession().tea);
   const { width, height } = useWindowDimensions();
   const pouring = useTeaPouring();
   const sensorReady = pouring.calibrationStatus === "ready";
@@ -257,6 +261,22 @@ export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouring
   const showCompleted = completed || progress >= 1;
   const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
 
+  useEffect(() => {
+    if (!showCompleted || onCompleted === undefined || completionCalledRef.current) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (completionCalledRef.current) {
+        return;
+      }
+      completionCalledRef.current = true;
+      onCompleted();
+    }, S5_COMPLETED_DISPLAY_DURATION_MS);
+
+    return () => clearTimeout(timer);
+  }, [onCompleted, showCompleted]);
+
   return (
     <View style={styles.screen}>
       <StatusBar hidden />
@@ -270,7 +290,7 @@ export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouring
           pointerEvents="none"
           style={[styles.stateLayer, showCompleted && styles.hiddenStateLayer]}
         >
-          <PouringVisual status={visibleStatus} progress={progress} teaColor={teaColor} />
+          <PouringVisual status={visibleStatus} progress={progress} teaColor={resolvedTeaColor} />
           <Text
             style={visibleStatus === "tooFast" ? styles.warningMessage : styles.instructionMessage}
           >
@@ -285,7 +305,7 @@ export function TeaPouringScreen({ teaColor = S5_DEFAULT_TEA_COLOR }: TeaPouring
           pointerEvents="none"
           style={[styles.stateLayer, !showCompleted && styles.hiddenStateLayer]}
         >
-          <CompletedVisual teaColor={teaColor} />
+          <CompletedVisual teaColor={resolvedTeaColor} />
         </View>
 
       </View>
@@ -411,10 +431,8 @@ const styles = StyleSheet.create({
   },
   teacupTeaSurface: {
     position: "absolute",
-    top: 0,
     left: 0,
     width: 76,
-    height: 27,
     borderRadius: 38,
   },
   instructionMessage: {
@@ -455,9 +473,10 @@ const styles = StyleSheet.create({
   },
   anglePointer: {
     position: "absolute",
-    top: -POINTER_EDGE_PADDING,
-    width: POINTER_WIDTH + POINTER_EDGE_PADDING * 2,
-    height: 18 + POINTER_EDGE_PADDING * 2,
+    top: 0,
+    width: POINTER_WIDTH,
+    height: 18,
+    zIndex: 1,
   },
   angleBar: {
     position: "absolute",
