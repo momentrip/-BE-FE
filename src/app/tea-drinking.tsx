@@ -8,7 +8,7 @@ export default function TeaDrinkingRoute() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <TeaDrinkingScreen onCompleted={() => router.push("/zen-quote")} />
+      <TeaDrinkingScreen onCompleted={() => router.push("/collection")} />
     </>
   );
 }

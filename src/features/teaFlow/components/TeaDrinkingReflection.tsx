@@ -42,26 +42,41 @@ const STEP_INDEX: Record<TeaDrinkingReflectionStep, number> = {
   reflectionOne: 0,
   reflectionTwo: 1,
   reflectionThree: 2,
+  lightsOut: 3,
 };
 
 const REFLECTION_COPY = {
   reflectionOne: {
     fontSize: 32,
+    left: 31,
     lineHeight: 45,
     text: "과거와 미래의 후회에서\n벗어나,\n번뇌에 붙잡혀있던 마음을\n비우게 되셨나요?",
     top: 563,
+    width: 332,
   },
   reflectionTwo: {
     fontSize: 26,
+    left: 31,
     lineHeight: 37,
     text: "차가 모두 비워졌습니다.\n마음까지 비워야 하는 것은 아닙니다.\n그저, 붙잡고 있던 것을 놓아봅니다.",
     top: 595,
+    width: 332,
   },
   reflectionThree: {
     fontSize: 27,
+    left: 31,
     lineHeight: 38,
     text: "비워진 자리에는\n다시 무엇이든 담길 수 있습니다",
     top: 609,
+    width: 332,
+  },
+  lightsOut: {
+    fontSize: 35,
+    left: 93,
+    lineHeight: 50,
+    text: "불이 다 꺼졌어요",
+    top: 401,
+    width: 206,
   },
 } as const;
 
@@ -172,7 +187,7 @@ function BottomGlow() {
   );
 }
 
-/** Figma S6 5~7페이지의 등불 소멸과 회고 문구를 순서대로 표시한다. */
+/** Figma S6 후속 회고와 불이 꺼진 마지막 화면을 순서대로 표시한다. */
 export function TeaDrinkingReflection({ step }: TeaDrinkingReflectionProps) {
   const phaseProgress = useSharedValue(STEP_INDEX[step]);
   const copy = REFLECTION_COPY[step];
@@ -185,13 +200,29 @@ export function TeaDrinkingReflection({ step }: TeaDrinkingReflectionProps) {
   }, [phaseProgress, step]);
 
   const lightStyle = useAnimatedStyle(() => ({
-    top: interpolate(phaseProgress.value, [0, 1, 2], [-203, -321, -479]),
+    top: interpolate(phaseProgress.value, [0, 1, 2, 3], [-203, -321, -479, -637]),
   }));
   const initialBackgroundStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       phaseProgress.value,
       [0, 0.8, 1],
       [1, 0, 0],
+      Extrapolation.CLAMP,
+    ),
+  }));
+  const bottomGlowStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      phaseProgress.value,
+      [2, 3],
+      [1, 0],
+      Extrapolation.CLAMP,
+    ),
+  }));
+  const lightsOutStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      phaseProgress.value,
+      [2, 3],
+      [0, 0.69],
       Extrapolation.CLAMP,
     ),
   }));
@@ -209,7 +240,10 @@ export function TeaDrinkingReflection({ step }: TeaDrinkingReflectionProps) {
       <Animated.View pointerEvents="none" style={[styles.reflectionLight, lightStyle]}>
         <ReflectionLight />
       </Animated.View>
-      <BottomGlow />
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, bottomGlowStyle]}>
+        <BottomGlow />
+      </Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.lightsOutOverlay, lightsOutStyle]} />
       <Animated.Text
         key={step}
         entering={FadeIn.duration(S6_REFLECTION_TRANSITION_DURATION_MS)}
@@ -218,6 +252,8 @@ export function TeaDrinkingReflection({ step }: TeaDrinkingReflectionProps) {
           styles.copy,
           {
             top: copy.top,
+            left: copy.left,
+            width: copy.width,
             fontSize: copy.fontSize,
             lineHeight: copy.lineHeight,
           },
@@ -256,10 +292,16 @@ const styles = StyleSheet.create({
   },
   copy: {
     position: "absolute",
-    left: 31,
-    width: 332,
     color: "#ffffff",
     fontFamily: fontFamily.main,
     textAlign: "center",
+  },
+  lightsOutOverlay: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 1,
+    left: 0,
+    backgroundColor: "#272727",
   },
 });
