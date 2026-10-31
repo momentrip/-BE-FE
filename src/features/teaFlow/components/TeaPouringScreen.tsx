@@ -55,7 +55,7 @@ const screenAssets = {
   teacup: require("@/assets/images/teaFlow/s5-teacup.png"),
   fullTeacup: require("@/assets/images/teaFlow/s5-teacup-full.png"),
   anglePointer: require("@/assets/images/teaFlow/s5-angle-pointer.svg"),
-  calibrationIcon: require("@/assets/images/teaFlow/s5-calibration-icon.png"),
+  calibrationIcon: require("@/assets/images/teaFlow/s6-phone-tilt.svg"),
 } as const;
 
 const SMALL_CUP_BODY_PATH =
@@ -303,7 +303,7 @@ export function TeaPouringScreen({ onCompleted, teaColor }: TeaPouringScreenProp
             {messageByStatus[visibleStatus]}
           </Text>
           {!sensorReady && (
-            <Image source={screenAssets.calibrationIcon} style={styles.calibrationIcon} />
+            <ExpoImage contentFit="fill" source={screenAssets.calibrationIcon} style={styles.calibrationIcon} />
           )}
           <AngleBar displayAngleDegrees={displayAngleDegrees} status={visibleStatus} />
         </View>
