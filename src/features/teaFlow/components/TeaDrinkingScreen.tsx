@@ -10,6 +10,7 @@ import {
   vec,
 } from "@shopify/react-native-skia";
 import { Image as ExpoImage } from "expo-image";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
@@ -35,6 +36,7 @@ import { getS6TeaColor } from "../utils/getS6TeaColor";
 import type { TeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
 import { getNextTeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
 import { getTeaDrinkingPresentation } from "../utils/teaDrinkingPresentation";
+import { S4BackButton } from "./S4BackButton";
 import { S4BlinkingText } from "./S4BlinkingText";
 import { TeaDrinkingReflection } from "./TeaDrinkingReflection";
 
@@ -167,6 +169,7 @@ function Teacup({ teaColor }: TeacupProps) {
  * 사용처: src/app/tea-drinking.tsx
  */
 export function TeaDrinkingScreen({ onCompleted }: TeaDrinkingScreenProps) {
+  const router = useRouter();
   const { width, height } = useWindowDimensions();
   const drinking = useTeaDrinking();
   const completionCalledRef = useRef(false);
@@ -248,6 +251,7 @@ export function TeaDrinkingScreen({ onCompleted }: TeaDrinkingScreenProps) {
             )}
           </Pressable>
         )}
+        <S4BackButton onBack={() => router.back()} />
       </View>
     </View>
   );

@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Image as ExpoImage } from "expo-image";
 import Animated, {
@@ -44,6 +45,7 @@ import {
   updateTeaPreparationState,
 } from "../utils/teaPreparationState";
 import { saveSelectedTea } from "../utils/saveSelectedTea";
+import { S4BackButton } from "./S4BackButton";
 import { S4BlinkingText } from "./S4BlinkingText";
 
 const DESIGN_WIDTH = 393;
@@ -446,6 +448,7 @@ function TappingVisual({
  * 사용처: src/app/tea-preparation
  */
 export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps) {
+  const router = useRouter();
   const { width, height } = useWindowDimensions();
   const recommendation = useMemo(() => {
     const worryKind = getCurrentSession().worryKind ?? "unsure";
@@ -538,6 +541,10 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
               />
             )}
           </>
+        )}
+        {/* 바텀시트·센서 안내가 열려 있을 때는 dim 위로 버튼이 뜨지 않게 숨긴다. */}
+        {!preparation.optionsOpen && preparation.phase !== "sensorGuide" && (
+          <S4BackButton onBack={() => router.back()} />
         )}
       </View>
     </View>
@@ -892,7 +899,7 @@ const styles = StyleSheet.create({
     left: 24,
     width: 342,
     color: "#dcdcdc",
-    fontFamily: fontFamily.pretendardBold,
+    fontFamily: fontFamily.sub3,
     fontSize: 14,
     lineHeight: 23,
     textAlign: "center",

@@ -1,5 +1,6 @@
 import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { StyleProp, ViewStyle } from "react-native";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Image as ExpoImage } from "expo-image";
 import {
@@ -22,6 +23,7 @@ import {
 } from "../constants/s5Pouring";
 import { useS5PouringProgress } from "../hooks/useS5PouringProgress";
 import { useTeaPouring } from "../hooks/useTeaPouring";
+import { S4BackButton } from "./S4BackButton";
 import { S5WaterStream } from "./S5WaterStream";
 import { getS5GaugeIndicatorLeft } from "../utils/s5AngleGauge";
 import {
@@ -238,6 +240,7 @@ export type TeaPouringScreenProps = {
  * 사용처: src/app/tea-pouring.tsx
  */
 export function TeaPouringScreen({ onCompleted, teaColor }: TeaPouringScreenProps) {
+  const router = useRouter();
   const completionCalledRef = useRef(false);
   const resolvedTeaColor = teaColor ?? getS5TeaColor(getCurrentSession().tea);
   const { width, height } = useWindowDimensions();
@@ -308,6 +311,7 @@ export function TeaPouringScreen({ onCompleted, teaColor }: TeaPouringScreenProp
           <CompletedVisual teaColor={resolvedTeaColor} />
         </View>
 
+        <S4BackButton onBack={() => router.back()} />
       </View>
     </View>
   );
@@ -441,7 +445,7 @@ const styles = StyleSheet.create({
     left: 24,
     width: 342,
     color: "#ffffff",
-    fontFamily: fontFamily.pretendardRegular,
+    fontFamily: fontFamily.sub3,
     fontSize: 16,
     lineHeight: 22.4,
     textAlign: "center",
@@ -561,7 +565,7 @@ const styles = StyleSheet.create({
   },
   completedTitle: {
     color: "rgba(237, 227, 204, 0.95)",
-    fontFamily: fontFamily.pretendardRegular,
+    fontFamily: fontFamily.sub3,
     fontSize: 20,
     lineHeight: 32,
     textAlign: "center",
