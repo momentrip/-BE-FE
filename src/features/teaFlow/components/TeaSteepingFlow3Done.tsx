@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     width: DESIGN_WIDTH,
     textAlign: "center",
     color: "#ffffff",
-    fontFamily: fontFamily.pretendardMedium,
+    fontFamily: fontFamily.sub1,
     fontSize: 12,
   },
 });

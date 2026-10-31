@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     top: 666,
     left: 75,
     color: "rgba(255,255,255,0.55)",
-    fontFamily: fontFamily.pretendardSemiBold,
+    fontFamily: fontFamily.sub1,
     fontSize: 11,
   },
   breathLabelCenter: {
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     width: DESIGN_WIDTH,
     textAlign: "center",
     color: "rgba(255,255,255,0.55)",
-    fontFamily: fontFamily.pretendardSemiBold,
+    fontFamily: fontFamily.sub1,
     fontSize: 11,
   },
   breathLabelRight: {
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     width: 315,
     textAlign: "right",
     color: "rgba(255,255,255,0.55)",
-    fontFamily: fontFamily.pretendardSemiBold,
+    fontFamily: fontFamily.sub1,
     fontSize: 11,
   },
   breathLabelActive: {
