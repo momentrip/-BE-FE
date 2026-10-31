@@ -6,6 +6,7 @@ export { TeaDrinkingScreen } from "./components/TeaDrinkingScreen";
 export type { TeaDrinkingScreenProps } from "./components/TeaDrinkingScreen";
 export { TeaPreparationScreen } from "./components/TeaPreparationScreen";
 export type { TeaPreparationScreenProps } from "./components/TeaPreparationScreen";
+export { useRefocusRemountKey } from "./hooks/useRefocusRemountKey";
 export { useTeaDrinking } from "./hooks/useTeaDrinking";
 export type {
   TeaDrinkingCalibrationStatus,

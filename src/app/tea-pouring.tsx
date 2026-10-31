@@ -1,14 +1,15 @@
 import { Stack, useRouter } from "expo-router";
 
-import { TeaPouringScreen } from "@/features/teaFlow";
+import { TeaPouringScreen, useRefocusRemountKey } from "@/features/teaFlow";
 
 export default function TeaPouringRoute() {
   const router = useRouter();
+  const remountKey = useRefocusRemountKey();
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <TeaPouringScreen onCompleted={() => router.push("/tea-drinking")} />
+      <TeaPouringScreen key={remountKey} onCompleted={() => router.push("/tea-drinking")} />
     </>
   );
 }

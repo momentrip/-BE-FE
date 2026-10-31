@@ -1,12 +1,14 @@
 import { Stack } from "expo-router";
 
-import { TeaSteepingScreen } from "@/features/teaFlow";
+import { TeaSteepingScreen, useRefocusRemountKey } from "@/features/teaFlow";
 
 export default function TeaSteepingRoute() {
+  const remountKey = useRefocusRemountKey();
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <TeaSteepingScreen />
+      <TeaSteepingScreen key={remountKey} />
     </>
   );
 }
