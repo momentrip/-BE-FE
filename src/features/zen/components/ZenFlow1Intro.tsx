@@ -70,8 +70,8 @@ const styles = StyleSheet.create({
     top: 760,
     width: DESIGN_WIDTH,
     textAlign: "center",
-    color: "rgb(255, 255, 255)",
-    fontFamily: fontFamily.pretendardRegular,
-    fontSize: 13,
+    color: "#ffffff",
+    fontFamily: fontFamily.pretendardMedium,
+    fontSize: 12,
   },
 });

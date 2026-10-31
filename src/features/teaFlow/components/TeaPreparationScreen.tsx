@@ -431,7 +431,7 @@ function TappingVisual({
       />
       <Animated.Image source={assets.teapot} style={[styles.absoluteAsset, teapotStyle]} />
       {animationCompleted ? (
-        <S4BlinkingText style={styles.tapInstruction} text="화면을 클릭하세요" />
+        <S4BlinkingText style={styles.tapHint} text="화면을 클릭하세요" />
       ) : (
         <Text style={styles.tapInstruction}>찻잎을 두드려 다관에 넣으세요</Text>
       )}
@@ -895,6 +895,16 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.pretendardBold,
     fontSize: 14,
     lineHeight: 23,
+    textAlign: "center",
+  },
+  tapHint: {
+    position: "absolute",
+    top: 620,
+    left: 24,
+    width: 342,
+    color: "#ffffff",
+    fontFamily: fontFamily.pretendardMedium,
+    fontSize: 12,
     textAlign: "center",
   },
 });

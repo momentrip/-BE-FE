@@ -1,7 +1,3 @@
-import { useEffect, useRef, useState } from "react";
-import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { Image as ExpoImage } from "expo-image";
 import {
   BlurMask,
   Canvas,
@@ -13,6 +9,10 @@ import {
   RoundedRect,
   vec,
 } from "@shopify/react-native-skia";
+import { Image as ExpoImage } from "expo-image";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useRef, useState } from "react";
+import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated, {
   Easing,
   FadeOut,
@@ -32,9 +32,10 @@ import {
 } from "../constants/s6Drinking";
 import { useTeaDrinking } from "../hooks/useTeaDrinking";
 import { getS6TeaColor } from "../utils/getS6TeaColor";
-import { getNextTeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
 import type { TeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
+import { getNextTeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
 import { getTeaDrinkingPresentation } from "../utils/teaDrinkingPresentation";
+import { S4BlinkingText } from "./S4BlinkingText";
 import { TeaDrinkingReflection } from "./TeaDrinkingReflection";
 
 const DESIGN_WIDTH = 393;
@@ -175,7 +176,7 @@ export function TeaDrinkingScreen({ onCompleted }: TeaDrinkingScreenProps) {
   const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
 
   useEffect(() => {
-    if (!drinking.completed || completionCalledRef.current) {
+    if (!drinking.completed || completionCalledRef.current || flowStep === "lightsOut") {
       return;
     }
 
@@ -186,15 +187,19 @@ export function TeaDrinkingScreen({ onCompleted }: TeaDrinkingScreenProps) {
       const nextStep = getNextTeaDrinkingFlowStep(flowStep);
       if (nextStep !== null) {
         setFlowStep(nextStep);
-        return;
       }
-
-      completionCalledRef.current = true;
-      onCompleted?.();
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [drinking.completed, flowStep, onCompleted]);
+  }, [drinking.completed, flowStep]);
+
+  const handleLightsOutTap = () => {
+    if (completionCalledRef.current) {
+      return;
+    }
+    completionCalledRef.current = true;
+    onCompleted?.();
+  };
 
   return (
     <View style={styles.screen}>
@@ -232,7 +237,16 @@ export function TeaDrinkingScreen({ onCompleted }: TeaDrinkingScreenProps) {
             </View>
           </Animated.View>
         ) : (
-          <TeaDrinkingReflection step={flowStep} />
+          <Pressable
+            onPress={handleLightsOutTap}
+            pointerEvents={flowStep === "lightsOut" ? "auto" : "none"}
+            style={StyleSheet.absoluteFill}
+          >
+            <TeaDrinkingReflection step={flowStep} />
+            {flowStep === "lightsOut" && (
+              <S4BlinkingText style={styles.tapHint} text="화면을 클릭하세요" />
+            )}
+          </Pressable>
         )}
       </View>
     </View>
@@ -391,6 +405,16 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.pretendardMedium,
     fontSize: 14,
     lineHeight: 17,
+    textAlign: "center",
+  },
+  tapHint: {
+    position: "absolute",
+    top: 716,
+    left: 24,
+    width: DESIGN_WIDTH - 48,
+    color: "#ffffff",
+    fontFamily: fontFamily.pretendardMedium,
+    fontSize: 12,
     textAlign: "center",
   },
 });
