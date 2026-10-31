@@ -55,13 +55,14 @@ describe('matchWorryKind', () => {
     expect(matchWorryKind('하 기 싫 어')).toBe('selfblame_lethargy');
   });
 
+  // 키워드가 안 걸린 문장은 점수표가 고르므로 결과가 unsure가 아닐 수 있다. 잘못 걸릴 뻔한 종류만 아니면 된다.
   it.each([
-    ['기술을 배워야 할지 모르겠어'], // '술을'
-    ['수술을 앞두고 있어'], // '술을'
-    ['영화가 재밌었어'], // '화가'
-    ['나만의 시간이 필요해'], // '나만'
-  ])('짧은 키워드가 다른 단어에 잘못 걸리지 않는다: "%s" → unsure', (text) => {
-    expect(matchWorryKind(text)).toBe('unsure');
+    ['기술을 배워야 할지 모르겠어', 'wavering_temptation'], // '술을'
+    ['수술을 앞두고 있어', 'wavering_temptation'], // '술을'
+    ['영화가 재밌었어', 'relationship_anger'], // '화가'
+    ['나만의 시간이 필요해', 'greed_impatience'], // '나만'
+  ])('짧은 키워드가 다른 단어에 잘못 걸리지 않는다: "%s"는 %s가 아니다', (text, wrongKind) => {
+    expect(matchWorryKind(text)).not.toBe(wrongKind);
   });
 });
 

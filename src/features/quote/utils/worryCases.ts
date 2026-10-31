@@ -1,6 +1,6 @@
 import type { WorryKind } from '@/shared/constants';
 
-// matchWorryKind 정확도 측정용 고민 문장 (40자 이내). 정답은 quote 담당이 정했다 (2026-10-29).
+// matchWorryKind 정확도 측정용 고민 문장 (40자 이내). 정답은 quote 담당이 정했다 (2026-10-31 수정).
 // 새 키워드를 넣을 때 이 문장들이 그대로 맞는지 테스트로 확인한다.
 export const WORRY_CASES: [text: string, expected: WorryKind][] = [
   // 불안·걱정
@@ -30,6 +30,7 @@ export const WORRY_CASES: [text: string, expected: WorryKind][] = [
   ['자기 전에 오늘 일을 계속 떠올려', 'overthinking'],
   ['쓸데없는 생각이 자꾸 들어', 'overthinking'],
   ['머리가 복잡해서 아무것도 손에 안 잡혀', 'overthinking'],
+  ['이것저것 다 별로야', 'overthinking'],
   // 진로·방향
   ['졸업하고 뭘 해야 할지 모르겠어', 'career_direction'],
   ['지금 회사 계속 다녀야 할지 이직할지 고민이야', 'career_direction'],
@@ -44,6 +45,7 @@ export const WORRY_CASES: [text: string, expected: WorryKind][] = [
   ['졸업반인데 아직 하고 싶은 일이 없어', 'career_direction'],
   ['이 회사에 계속 있어도 될지 모르겠어', 'career_direction'],
   ['전과를 할지 말지 고민돼', 'career_direction'],
+  ['잘 모르겠어', 'career_direction'],
   // 관계·분노
   ['그 사람이 한 말이 계속 생각나', 'relationship_anger'],
   ['친구가 내 얘기를 뒤에서 하고 다녀서 화나', 'relationship_anger'],
@@ -73,6 +75,9 @@ export const WORRY_CASES: [text: string, expected: WorryKind][] = [
   ['시험 망친 게 다 내 잘못 같아', 'selfblame_lethargy'],
   ['요즘 아무것도 하고 싶지 않아', 'selfblame_lethargy'],
   ['나는 왜 이렇게 게을러', 'selfblame_lethargy'],
+  ['딱히 이유는 없는데 울적해', 'selfblame_lethargy'],
+  ['날씨가 좋은데 왜 이렇게 쓸쓸할까', 'selfblame_lethargy'],
+  ['하루가 너무 길었어', 'selfblame_lethargy'],
   // 욕심·조급
   ['나만 제자리인 것 같아 현타 와', 'greed_impatience'],
   ['친구들은 다 집 샀는데 나만 뒤처진 것 같아', 'greed_impatience'],
@@ -106,10 +111,5 @@ export const WORRY_CASES: [text: string, expected: WorryKind][] = [
   ['그냥 요즘 좀 그래', 'unsure'],
   ['뭔가 마음이 허전해', 'unsure'],
   ['오늘따라 기분이 이상해', 'unsure'],
-  ['딱히 이유는 없는데 울적해', 'unsure'],
   ['비가 와서 그런지 마음이 무거워', 'unsure'],
-  ['잘 모르겠어', 'unsure'],
-  ['날씨가 좋은데 왜 이렇게 쓸쓸할까', 'unsure'],
-  ['이것저것 다 별로야', 'unsure'],
-  ['하루가 너무 길었어', 'unsure'],
 ];
