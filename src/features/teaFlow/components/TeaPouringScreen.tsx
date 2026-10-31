@@ -10,13 +10,17 @@ import {
   RadialGradient,
   vec,
 } from "@shopify/react-native-skia";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 
 import { getCurrentSession } from "@/features/session";
 import { fontFamily } from "@/shared/theme";
 
-import { S5_CUP_COLORS, S5_LIQUID_MAX_OPACITY } from "../constants/s5Pouring";
+import {
+  S5_COMPLETED_DISPLAY_DURATION_MS,
+  S5_CUP_COLORS,
+  S5_LIQUID_MAX_OPACITY,
+} from "../constants/s5Pouring";
 import { useS5PouringProgress } from "../hooks/useS5PouringProgress";
 import { useTeaPouring } from "../hooks/useTeaPouring";
 import { S5WaterStream } from "./S5WaterStream";
@@ -260,15 +264,19 @@ export type TeaPouringScreenProps = {
    * 차 id(getCurrentSession().tea)로 zen이 공개한 TEA_COLOR에서 자동으로 찾는다.
    */
   teaColor?: string;
+  /** 완료 화면을 잠시 표시한 뒤 다음 차 마시기 화면으로 이동할 때 호출한다. */
+  onCompleted?: () => void;
 };
 
 /**
  * Figma S5 차 따르기 화면을 센서 상태 및 화면 전용 진행도와 연결한다.
- * @param teaColor 찻잔의 액체 표면 색상. 생략하면 session에 저장된 차로 자동 결정한다.
+ * @param props.teaColor 찻잔의 액체 표면 색상. 생략하면 session에 저장된 차로 자동 결정한다.
+ * @param props.onCompleted 완료 화면을 잠시 표시한 뒤 호출할 다음 화면 callback
  * @returns S5 idle/pouring/tooFast/completed 화면
  * 사용처: src/app/tea-pouring.tsx
  */
-export function TeaPouringScreen({ teaColor }: TeaPouringScreenProps) {
+export function TeaPouringScreen({ onCompleted, teaColor }: TeaPouringScreenProps) {
+  const completionCalledRef = useRef(false);
   const resolvedTeaColor = teaColor ?? getS5TeaColor(getCurrentSession().tea);
   const { width, height } = useWindowDimensions();
   const pouring = useTeaPouring();
@@ -290,6 +298,22 @@ export function TeaPouringScreen({ teaColor }: TeaPouringScreenProps) {
   });
   const showCompleted = completed || progress >= 1;
   const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+
+  useEffect(() => {
+    if (!showCompleted || onCompleted === undefined || completionCalledRef.current) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (completionCalledRef.current) {
+        return;
+      }
+      completionCalledRef.current = true;
+      onCompleted();
+    }, S5_COMPLETED_DISPLAY_DURATION_MS);
+
+    return () => clearTimeout(timer);
+  }, [onCompleted, showCompleted]);
 
   return (
     <View style={styles.screen}>

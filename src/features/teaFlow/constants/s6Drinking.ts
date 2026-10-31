@@ -1,0 +1,9 @@
+export const S6_DRINKING_COMPLETED_DISPLAY_DURATION_MS = 700;
+export const S6_LANTERN_TRANSITION_DURATION_MS = 450;
+
+export const S6_LANTERN_TOP_BY_SIP_COUNT = {
+  0: 362,
+  1: 260,
+  2: 177,
+  3: 80,
+} as const;
