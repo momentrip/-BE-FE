@@ -11,7 +11,7 @@ function getTodayStartIso(): string {
  * 오늘(기기 시간대 자정 이후) 같은 번뇌 종류로 날아간 풍등 수를 센다.
  * @param worryKind 방금 분류된 번뇌 종류
  * @returns 오늘 같은 번뇌 종류 풍등 수 (나를 포함하지 않음, 아직 내 풍등은 저장 전이라서)
- * 사용처: worry
+ * 사용처: worry, zen
  */
 export async function getSameWorryKindCountToday(worryKind: WorryKind): Promise<number> {
   const { count, error } = await supabase
