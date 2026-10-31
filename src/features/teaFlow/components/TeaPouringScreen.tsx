@@ -1,10 +1,9 @@
 import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { StyleProp, ViewStyle } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { Image as ExpoImage } from "expo-image";
 import {
   Canvas,
-  Group,
-  LinearGradient,
   Oval,
   Path,
   RadialGradient,
@@ -38,7 +37,6 @@ const DESIGN_HEIGHT = 852;
 const ANGLE_BAR_LEFT = 65;
 const ANGLE_BAR_WIDTH = 260;
 const POINTER_WIDTH = 26;
-const POINTER_EDGE_PADDING = 1;
 const POINTER_MIN_LEFT = 57;
 const POINTER_MAX_LEFT = ANGLE_BAR_LEFT + ANGLE_BAR_WIDTH - POINTER_WIDTH / 2;
 const SMALL_CUP_LIQUID_MAX_HEIGHT = 27;
@@ -52,6 +50,7 @@ const screenAssets = {
   teapot: require("@/assets/images/teaFlow/s5-teapot.png"),
   teacup: require("@/assets/images/teaFlow/s5-teacup.png"),
   fullTeacup: require("@/assets/images/teaFlow/s5-teacup-full.png"),
+  anglePointer: require("@/assets/images/teaFlow/s5-angle-pointer.svg"),
   calibrationIcon: require("@/assets/images/teaFlow/s5-calibration-icon.png"),
 } as const;
 
@@ -59,10 +58,6 @@ const SMALL_CUP_BODY_PATH =
   "M1 10.5L0 2.5L3 4L5 5.5L8 7L10.5 8L14.5 9L20 10.5L26 11.5L34 12.5H42L50.5 12L59.5 10.5L66.5 9L71.5 7.5L79 3.5L84 0V3L83 8.5L81 15L79 21L76.5 28L73.5 33.5L70.5 38L66.5 43.5L61 48L57.5 49.5L53 51L48 52H34.5L31.5 51.5L27.5 51L25 49.5L22.5 49L20 47L18 44.5L14 39.5L10.5 34L8 29.5L5.5 24L3 18L1 10.5Z";
 const SMALL_CUP_RIM_PATH =
   "M4 0L0 1.5L0.5 3L3 4.5L5.5 6L8 7L11.5 8.5L14.5 9.5L19 10.5L23 11L28 12L32 12.5H45L50.5 12L59 11L65 9.5L70 8L74.5 5.5L77.5 3.5L75 0L71.5 2.5L63 5.5L57.5 7L48.5 8H28.5L24.5 7L20 6.5L15.5 5L11 3.5L7.5 2L4 0Z";
-const ANGLE_POINTER_BODY_PATH =
-  "M0 4C0 2.89543 0.895431 2 2 2H24C25.1046 2 26 2.89543 26 4V6C26 12.6274 20.6274 18 14 18H12C5.37258 18 0 12.6274 0 6V4Z";
-const ANGLE_POINTER_RIM_PATH =
-  "M0 3.5C0 1.567 1.567 0 3.5 0H22.5C24.433 0 26 1.567 26 3.5C26 5.433 24.433 7 22.5 7H3.5C1.567 7 0 5.433 0 3.5Z";
 const messageByStatus: Record<TeaPouringStatus, string> = {
   idle: "다관을 기울여 찻잔에 따르세요",
   pouring: "좋아요, 그대로",
@@ -98,25 +93,11 @@ function AngleBar({ displayAngleDegrees, status }: AngleBarProps) {
 
   return (
     <View style={styles.angleArea}>
-      <Canvas
-        style={[styles.anglePointer, { left: pointerLeft - POINTER_EDGE_PADDING }]}
-      >
-        <Group
-          transform={[
-            { translateX: POINTER_EDGE_PADDING },
-            { translateY: POINTER_EDGE_PADDING },
-          ]}
-        >
-          <Path path={ANGLE_POINTER_BODY_PATH}>
-            <LinearGradient
-              start={vec(13, 2)}
-              end={vec(13, 18)}
-              colors={["#eae5da", "#a9a296"]}
-            />
-          </Path>
-          <Path path={ANGLE_POINTER_RIM_PATH} color="#d8d1c3" />
-        </Group>
-      </Canvas>
+      <ExpoImage
+        contentFit="fill"
+        source={screenAssets.anglePointer}
+        style={[styles.anglePointer, { left: pointerLeft }]}
+      />
       <View style={styles.angleBar}>
         <View style={styles.idleRange} />
         <View style={styles.pouringRange} />
@@ -492,9 +473,10 @@ const styles = StyleSheet.create({
   },
   anglePointer: {
     position: "absolute",
-    top: -POINTER_EDGE_PADDING,
-    width: POINTER_WIDTH + POINTER_EDGE_PADDING * 2,
-    height: 18 + POINTER_EDGE_PADDING * 2,
+    top: 0,
+    width: POINTER_WIDTH,
+    height: 18,
+    zIndex: 1,
   },
   angleBar: {
     position: "absolute",

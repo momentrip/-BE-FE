@@ -39,6 +39,7 @@ import {
   INITIAL_TEA_PREPARATION_STATE,
   updateTeaPreparationState,
 } from "../utils/teaPreparationState";
+import { saveSelectedTea } from "../utils/saveSelectedTea";
 
 const DESIGN_WIDTH = 393;
 const DESIGN_HEIGHT = 852;
@@ -451,6 +452,11 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
     dispatch({ type: "startTapping" });
   }, []);
 
+  const confirmSelectedTea = useCallback(() => {
+    saveSelectedTea(selectedTea.key);
+    dispatch({ type: "confirmTea" });
+  }, [selectedTea.key]);
+
   const tappingVisible = preparation.phase === "tapping" || preparation.phase === "completed";
 
   return (
@@ -470,14 +476,14 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
             <Image source={assets.backgroundLayer3} style={styles.backgroundLayer3} />
             <StepIndicator />
             <TeaSummary
-              onChoose={() => dispatch({ type: "confirmTea" })}
+              onChoose={confirmSelectedTea}
               onOpenOptions={() => dispatch({ type: "openOptions" })}
               tea={selectedTea}
             />
             {preparation.optionsOpen && (
               <TeaOptionsSheet
                 onClose={() => dispatch({ type: "closeOptions" })}
-                onConfirm={() => dispatch({ type: "confirmTea" })}
+                onConfirm={confirmSelectedTea}
                 onSelect={(tea) => dispatch({ type: "selectTea", teaKey: tea.key })}
                 selectedTea={selectedTea}
               />
