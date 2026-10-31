@@ -33,6 +33,7 @@ import {
 } from "../constants/s6Drinking";
 import { useTeaDrinking } from "../hooks/useTeaDrinking";
 import { getS6TeaColor } from "../utils/getS6TeaColor";
+import { getTeaLiquidDisplayColor } from "../utils/getTeaLiquidDisplayColor";
 import type { TeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
 import { getNextTeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
 import { getTeaDrinkingPresentation } from "../utils/teaDrinkingPresentation";
@@ -175,7 +176,7 @@ export function TeaDrinkingScreen({ onCompleted }: TeaDrinkingScreenProps) {
   const completionCalledRef = useRef(false);
   const [flowStep, setFlowStep] = useState<TeaDrinkingFlowStep>("drinking");
   const presentation = getTeaDrinkingPresentation(drinking);
-  const teaColor = getS6TeaColor(getCurrentSession().tea);
+  const teaColor = getTeaLiquidDisplayColor(getS6TeaColor(getCurrentSession().tea));
   const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
 
   useEffect(() => {

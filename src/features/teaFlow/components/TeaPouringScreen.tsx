@@ -31,7 +31,9 @@ import {
   getS5EffectivePouringState,
 } from "../utils/s5PouringState";
 import { getS5LiquidFillHeight, getS5LiquidOpacity } from "../utils/s5LiquidDisplay";
+import { getS5PouringLiquidColor } from "../utils/getS5PouringLiquidColor";
 import { getS5TeaColor } from "../utils/getS5TeaColor";
+import { getTeaLiquidDisplayColor } from "../utils/getTeaLiquidDisplayColor";
 import type { TeaPouringStatus } from "../utils/zTwistState";
 
 const DESIGN_WIDTH = 393;
@@ -53,7 +55,7 @@ const screenAssets = {
   teacup: require("@/assets/images/teaFlow/s5-teacup.png"),
   fullTeacup: require("@/assets/images/teaFlow/s5-teacup-full.png"),
   anglePointer: require("@/assets/images/teaFlow/s5-angle-pointer.svg"),
-  calibrationIcon: require("@/assets/images/teaFlow/s5-calibration-icon.png"),
+  calibrationIcon: require("@/assets/images/teaFlow/s6-phone-tilt.svg"),
 } as const;
 
 const SMALL_CUP_BODY_PATH =
@@ -184,6 +186,7 @@ function PouringVisual({ status, progress, teaColor }: PouringVisualProps) {
     : status === "tooFast"
       ? "rgba(255,90,90,0.36)"
       : "rgba(255,233,90,0.13)";
+  const pouringLiquidColor = getS5PouringLiquidColor(teaColor);
 
   return (
     <>
@@ -191,8 +194,8 @@ function PouringVisual({ status, progress, teaColor }: PouringVisualProps) {
       <View style={styles.teapotFrame}>
         <Image source={screenAssets.teapot} style={[styles.teapot, { transform: [{ rotate: rotation }] }]} />
       </View>
-      <S5WaterStream status={status} teaColor={teaColor} />
-      <SmallTeacup progress={progress} teaColor={teaColor} />
+      <S5WaterStream status={status} teaColor={pouringLiquidColor} />
+      <SmallTeacup progress={progress} teaColor={pouringLiquidColor} />
     </>
   );
 }
@@ -242,7 +245,7 @@ export type TeaPouringScreenProps = {
 export function TeaPouringScreen({ onCompleted, teaColor }: TeaPouringScreenProps) {
   const router = useRouter();
   const completionCalledRef = useRef(false);
-  const resolvedTeaColor = teaColor ?? getS5TeaColor(getCurrentSession().tea);
+  const resolvedTeaColor = teaColor ?? getTeaLiquidDisplayColor(getS5TeaColor(getCurrentSession().tea));
   const { width, height } = useWindowDimensions();
   const pouring = useTeaPouring();
   const sensorReady = pouring.calibrationStatus === "ready";
@@ -300,7 +303,7 @@ export function TeaPouringScreen({ onCompleted, teaColor }: TeaPouringScreenProp
             {messageByStatus[visibleStatus]}
           </Text>
           {!sensorReady && (
-            <Image source={screenAssets.calibrationIcon} style={styles.calibrationIcon} />
+            <ExpoImage contentFit="fill" source={screenAssets.calibrationIcon} style={styles.calibrationIcon} />
           )}
           <AngleBar displayAngleDegrees={displayAngleDegrees} status={visibleStatus} />
         </View>
