@@ -2,10 +2,10 @@ import type { TeaName } from "@/features/quote";
 
 export const TEA_NAME_TO_ID = {
   국화차: "chrysanthemum",
-  둥글레차: "solomons-seal",
+  둥굴레차: "solomons-seal",
   "우전 녹차": "ujeon-green-tea",
   백차: "white-tea",
-  옥수수차: "corn-tea",
+  옥수수수염차: "corn-tea",
   "세작 녹차": "sejak-green-tea",
   "중작 녹차": "jungjak-green-tea",
   감잎차: "persimmon-leaf-tea",

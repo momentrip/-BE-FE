@@ -37,6 +37,11 @@ describe("teaFlow tea id mapping", () => {
     expect(TEA_NAME_TO_ID.오미자차).toBe("omija");
   });
 
+  it("표기를 바꾼 차도 기존 TeaId를 유지한다", () => {
+    expect(TEA_NAME_TO_ID.둥굴레차).toBe("solomons-seal");
+    expect(TEA_NAME_TO_ID.옥수수수염차).toBe("corn-tea");
+  });
+
   it("TeaId 19개가 차 이름으로 TEA_COLOR를 조회한다", () => {
     Object.entries(TEA_NAME_TO_ID).forEach(([name, id]) => {
       expect(getS5TeaColor(id)).toBe(`color:${name}`);

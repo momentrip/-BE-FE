@@ -7,6 +7,8 @@ describe("getTeaLabel", () => {
   it.each([
     ["omija", "오미자차"],
     ["chrysanthemum", "국화차"],
+    ["solomons-seal", "둥굴레차"],
+    ["corn-tea", "옥수수수염차"],
   ])("%s id의 화면 표시 이름을 반환한다", (teaId, expected) => {
     expect(getTeaLabel(teaId)).toBe(expected);
   });
