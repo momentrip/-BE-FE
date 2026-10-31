@@ -32,6 +32,7 @@ import {
 } from "../utils/s5PouringState";
 import { getS5LiquidFillHeight, getS5LiquidOpacity } from "../utils/s5LiquidDisplay";
 import { getS5TeaColor } from "../utils/getS5TeaColor";
+import { getTeaLiquidDisplayColor } from "../utils/getTeaLiquidDisplayColor";
 import type { TeaPouringStatus } from "../utils/zTwistState";
 
 const DESIGN_WIDTH = 393;
@@ -242,7 +243,7 @@ export type TeaPouringScreenProps = {
 export function TeaPouringScreen({ onCompleted, teaColor }: TeaPouringScreenProps) {
   const router = useRouter();
   const completionCalledRef = useRef(false);
-  const resolvedTeaColor = teaColor ?? getS5TeaColor(getCurrentSession().tea);
+  const resolvedTeaColor = teaColor ?? getTeaLiquidDisplayColor(getS5TeaColor(getCurrentSession().tea));
   const { width, height } = useWindowDimensions();
   const pouring = useTeaPouring();
   const sensorReady = pouring.calibrationStatus === "ready";
