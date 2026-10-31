@@ -75,9 +75,25 @@ describe("getS3TeaOptions", () => {
     });
   });
 
-  it("19개 차를 제공하고 asset 없는 차는 공통 shell만 사용할 수 있다", () => {
+  it("19개 차 모두 자기 TeaId의 content image와 glow 색을 제공한다", () => {
     expect(allTeaOptions).toHaveLength(19);
-    expect(allTeaOptions.find((tea) => tea.key === "solomons-seal")?.teaContentImage)
-      .toBeUndefined();
+    allTeaOptions.forEach((tea) => {
+      expect(tea.teaContentImage).toEqual(
+        expect.objectContaining({
+          testUri: expect.stringContaining(`s3-tea-content-${tea.key}.png`),
+        }),
+      );
+      expect(tea.glowColor.primary).toMatch(/^#[0-9A-F]{6}$/);
+      expect(tea.glowColor.secondary).toMatch(/^#[0-9A-F]{6}$/);
+      expect(tea.glowColor.edge).toMatch(/^#[0-9A-F]{6}$/);
+    });
+  });
+
+  it("신규 차의 glow는 TEA_COLOR와 같은 값 하나를 쓴다", () => {
+    expect(allTeaOptions.find((tea) => tea.key === "jujube-tea")?.glowColor).toEqual({
+      primary: "#6E2C16",
+      secondary: "#6E2C16",
+      edge: "#6E2C16",
+    });
   });
 });
