@@ -1,5 +1,5 @@
 export type TeaTapAnimationState = {
-  phase: "idle" | "animating" | "completed";
+  phase: "idle" | "animating" | "completed" | "confirmed";
 };
 
 export const INITIAL_TEA_TAP_ANIMATION_STATE: TeaTapAnimationState = {
@@ -22,4 +22,13 @@ export function completeTeaTapAnimation(
     return previous;
   }
   return { phase: "completed" };
+}
+
+export function confirmTeaTapCompletion(
+  previous: TeaTapAnimationState,
+): TeaTapAnimationState {
+  if (previous.phase !== "completed") {
+    return previous;
+  }
+  return { phase: "confirmed" };
 }
