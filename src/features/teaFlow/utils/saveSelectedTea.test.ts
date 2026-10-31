@@ -19,7 +19,7 @@ describe("saveSelectedTea", () => {
     mockedSaveTea.mockClear();
   });
 
-  it.each(["chrysanthemum", "omija"] as const)(
+  it.each(["chrysanthemum", "omija", "solomons-seal"] as const)(
     "%s 최종 확정 시 선택한 tea id를 session에 저장한다",
     (teaKey) => {
       saveSelectedTea(teaKey);

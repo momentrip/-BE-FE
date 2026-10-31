@@ -1,6 +1,8 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { S3_TEA_OPTIONS } from "../data/s3TeaOptions";
+import { getTeasByWorryKind } from "@/features/quote";
+
+import { getS3TeaOptions } from "../data/s3TeaOptions";
 import {
   INITIAL_TEA_PREPARATION_STATE,
   updateTeaPreparationState,
@@ -41,9 +43,21 @@ describe("updateTeaPreparationState", () => {
   });
 });
 
-describe("S3_TEA_OPTIONS", () => {
+describe("getS3TeaOptions", () => {
+  const allTeaOptions = getS3TeaOptions(
+    getTeasByWorryKind({ worryKind: "unsure", hour: 12 }),
+  );
+
   it("차 종류별 display data와 내부 content image를 각각 제공한다", () => {
-    const [chrysanthemum, omija] = S3_TEA_OPTIONS;
+    const chrysanthemum = allTeaOptions.find((tea) => tea.key === "chrysanthemum");
+    const omija = allTeaOptions.find((tea) => tea.key === "omija");
+
+    expect(chrysanthemum).toBeDefined();
+    expect(omija).toBeDefined();
+
+    if (!chrysanthemum || !omija) {
+      return;
+    }
 
     expect(chrysanthemum.name).not.toBe(omija.name);
     expect(chrysanthemum.description).not.toBe(omija.description);
@@ -59,5 +73,11 @@ describe("S3_TEA_OPTIONS", () => {
       secondary: "#D9353F",
       edge: "#6F1820",
     });
+  });
+
+  it("19개 차를 제공하고 asset 없는 차는 공통 shell만 사용할 수 있다", () => {
+    expect(allTeaOptions).toHaveLength(19);
+    expect(allTeaOptions.find((tea) => tea.key === "solomons-seal")?.teaContentImage)
+      .toBeUndefined();
   });
 });
