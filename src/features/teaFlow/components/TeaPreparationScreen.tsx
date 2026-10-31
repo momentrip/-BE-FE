@@ -40,6 +40,7 @@ import {
   updateTeaPreparationState,
 } from "../utils/teaPreparationState";
 import { saveSelectedTea } from "../utils/saveSelectedTea";
+import { S4BlinkingText } from "./S4BlinkingText";
 
 const DESIGN_WIDTH = 393;
 const DESIGN_HEIGHT = 852;
@@ -327,6 +328,7 @@ function SensorGuide({ onAllow, onFallback, requesting }: SensorGuideProps) {
 }
 
 type TappingVisualProps = {
+  animationCompleted: boolean;
   animationStarted: boolean;
   enabled: boolean;
   onAnimationCompleted: () => void;
@@ -335,6 +337,7 @@ type TappingVisualProps = {
 };
 
 function TappingVisual({
+  animationCompleted,
   animationStarted,
   enabled,
   onAnimationCompleted,
@@ -388,9 +391,11 @@ function TappingVisual({
 
   return (
     <Pressable
-      accessibilityHint="화면을 한 번 두드리면 찻잎 넣기가 시작됩니다"
-      accessibilityLabel="찻잎 두드리기"
-      disabled={!enabled || animationStarted}
+      accessibilityHint={animationCompleted
+        ? "화면을 한 번 누르면 차 우리기로 이동합니다"
+        : "화면을 한 번 두드리면 찻잎 넣기가 시작됩니다"}
+      accessibilityLabel={animationCompleted ? "차 우리기로 이동" : "찻잎 두드리기"}
+      disabled={!enabled || (animationStarted && !animationCompleted)}
       onPress={onTap}
       style={StyleSheet.absoluteFill}
     >
@@ -407,7 +412,11 @@ function TappingVisual({
         tea={tea}
       />
       <Animated.Image source={assets.teapot} style={[styles.absoluteAsset, teapotStyle]} />
-      <Text style={styles.tapInstruction}>찻잎을 두드려 다관에 넣으세요</Text>
+      {animationCompleted ? (
+        <S4BlinkingText style={styles.tapInstruction} text="화면을 클릭하세요" />
+      ) : (
+        <Text style={styles.tapInstruction}>찻잎을 두드려 다관에 넣으세요</Text>
+      )}
     </Pressable>
   );
 }
@@ -465,6 +474,7 @@ export function TeaPreparationScreen({ onCompleted }: TeaPreparationScreenProps)
       <View style={[styles.canvas, { transform: [{ scale }] }]}>
         {tappingVisible ? (
           <TappingVisual
+            animationCompleted={tapping.animationCompleted}
             animationStarted={tapping.animationStarted}
             enabled={preparation.phase === "tapping"}
             onAnimationCompleted={tapping.completeAnimation}
