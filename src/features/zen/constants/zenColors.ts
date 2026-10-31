@@ -18,7 +18,7 @@ export const WORRY_KIND_BREW_COLOR: Record<WorryKind, string> = {
 /** 차 이름(getTeaLabel 결과) → 태그 점 색. 매핑에 없는 차는 TEA_COLOR_FALLBACK을 쓴다. 사용처: zen, collection */
 export const TEA_COLOR: Record<string, string> = {
   국화차: "#C8A040",
-  둥글레차: "#E2C27A",
+  둥굴레차: "#E2C27A",
   "세작 녹차": "#8EA048",
   "중작 녹차": "#7E9440",
   감잎차: "#A6A04A",
@@ -35,7 +35,7 @@ export const TEA_COLOR: Record<string, string> = {
   매화차: "#D8B8A8",
   "우전 녹차": "#C4CC90",
   백차: "#CFC690",
-  옥수수차: "#C8B868",
+  옥수수수염차: "#C8B868",
 };
 
 export const TEA_COLOR_FALLBACK = "#C9BC9F";
