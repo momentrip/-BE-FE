@@ -8,7 +8,7 @@ const names = (worryKind: (typeof WORRY_KINDS)[number], hour: number) =>
 
 describe('getTeasByWorryKind', () => {
   it('낮에는 피그마 화면대로 번뇌 종류별 차를 모두 돌려준다', () => {
-    expect(names('anxiety_worry', 14)).toEqual(['국화차', '둥글레차', '우전 녹차', '백차', '옥수수차']);
+    expect(names('anxiety_worry', 14)).toEqual(['국화차', '둥굴레차', '우전 녹차', '백차', '옥수수수염차']);
     expect(names('career_direction', 14)).toEqual(['오미자차', '구기자차']);
   });
 
@@ -21,7 +21,7 @@ describe('getTeasByWorryKind', () => {
   });
 
   it.each([21, 23, 0, 4])('밤(%i시)에는 카페인 없는 차만 돌려준다', (hour) => {
-    expect(names('anxiety_worry', hour)).toEqual(['국화차', '둥글레차', '옥수수차']);
+    expect(names('anxiety_worry', hour)).toEqual(['국화차', '둥굴레차', '옥수수수염차']);
     expect(names('overthinking', hour)).toEqual(['감잎차']);
   });
 

@@ -7,10 +7,10 @@ import type { WorryKind } from '@/shared/constants';
 /** 차 이름 19개. TEA_COLOR 키와 같다. */
 export const TEA_NAMES = [
   '국화차',
-  '둥글레차',
+  '둥굴레차',
   '우전 녹차',
   '백차',
-  '옥수수차',
+  '옥수수수염차',
   '세작 녹차',
   '중작 녹차',
   '감잎차',
@@ -38,14 +38,14 @@ export type TeaInfo = {
   season: TeaSeason;
 };
 
-// 국화·둥글레·오미자·구기자·연꽃·매화는 피그마 태그 그대로다.
+// 국화·둥굴레·오미자·구기자·연꽃·매화는 피그마 태그 그대로다.
 // 나머지 13개는 피그마 태그가 아직 임시값이라 일반적인 차 지식으로 채운 초안이다. 디자인 확정 후 맞춘다.
 export const TEA_INFO: Record<TeaName, TeaInfo> = {
   국화차: { caffeine: false, season: '가을 제철' },
-  둥글레차: { caffeine: false, season: '사계절' },
+  둥굴레차: { caffeine: false, season: '사계절' },
   '우전 녹차': { caffeine: true, season: '봄 한정' },
   백차: { caffeine: true, season: '사계절' },
-  옥수수차: { caffeine: false, season: '사계절' },
+  옥수수수염차: { caffeine: false, season: '사계절' },
   '세작 녹차': { caffeine: true, season: '봄 제철' },
   '중작 녹차': { caffeine: true, season: '봄 제철' },
   감잎차: { caffeine: false, season: '여름 제철' },
@@ -63,7 +63,7 @@ export const TEA_INFO: Record<TeaName, TeaInfo> = {
 };
 
 export const TEAS_BY_WORRY_KIND: Record<WorryKind, readonly TeaName[]> = {
-  anxiety_worry: ['국화차', '둥글레차', '우전 녹차', '백차', '옥수수차'],
+  anxiety_worry: ['국화차', '둥굴레차', '우전 녹차', '백차', '옥수수수염차'],
   overthinking: ['세작 녹차', '중작 녹차', '감잎차'],
   career_direction: ['오미자차', '구기자차'],
   relationship_anger: ['대추차', '쌍화차'],
