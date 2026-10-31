@@ -15,3 +15,5 @@ export type {
   TeaPouringState,
 } from "./hooks/useTeaPouring";
 export { getTeaLabel } from "./utils/getTeaLabel";
+export { TeaSteepingScreen } from "./components/TeaSteepingScreen";
+export type { TeaSteepingScreenProps } from "./components/TeaSteepingScreen";
