@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Image as ExpoImage } from "expo-image";
@@ -12,6 +12,7 @@ import {
 } from "@shopify/react-native-skia";
 import Animated, {
   Easing,
+  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -22,9 +23,14 @@ import { fontFamily } from "@/shared/theme";
 import {
   S6_DRINKING_COMPLETED_DISPLAY_DURATION_MS,
   S6_LANTERN_TRANSITION_DURATION_MS,
+  S6_REFLECTION_DISPLAY_DURATION_MS,
+  S6_REFLECTION_TRANSITION_DURATION_MS,
 } from "../constants/s6Drinking";
 import { useTeaDrinking } from "../hooks/useTeaDrinking";
+import { getNextTeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
+import type { TeaDrinkingFlowStep } from "../utils/teaDrinkingFlow";
 import { getTeaDrinkingPresentation } from "../utils/teaDrinkingPresentation";
+import { TeaDrinkingReflection } from "./TeaDrinkingReflection";
 
 const DESIGN_WIDTH = 393;
 const DESIGN_HEIGHT = 852;
@@ -37,7 +43,7 @@ const assets = {
 } as const;
 
 export type TeaDrinkingScreenProps = {
-  /** 세 모금을 모두 마시고 완료 화면을 확인한 뒤 호출한다. */
+  /** 세 모금과 Figma 후속 회고 화면을 모두 확인한 뒤 호출한다. */
   onCompleted?: () => void;
 };
 
@@ -104,63 +110,79 @@ function Teacup() {
 }
 
 /**
- * S6 차 마시기 센서 상태를 Figma 열반 1~4 화면과 연결한다.
- * @param props.onCompleted 세 모금 완료 상태를 잠시 표시한 뒤 다음 화면으로 이동할 callback
- * @returns 차 마시기 화면
+ * S6 차 마시기 센서 상태와 완료 후 Figma 5~7페이지를 연결한다.
+ * @param props.onCompleted 마지막 회고 화면을 확인한 뒤 다음 화면으로 이동할 callback
+ * @returns 차 마시기 및 완료 후 회고 화면
  * 사용처: src/app/tea-drinking.tsx
  */
 export function TeaDrinkingScreen({ onCompleted }: TeaDrinkingScreenProps) {
   const { width, height } = useWindowDimensions();
   const drinking = useTeaDrinking();
   const completionCalledRef = useRef(false);
+  const [flowStep, setFlowStep] = useState<TeaDrinkingFlowStep>("drinking");
   const presentation = getTeaDrinkingPresentation(drinking);
   const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
 
   useEffect(() => {
-    if (!drinking.completed || onCompleted === undefined || completionCalledRef.current) {
+    if (!drinking.completed || completionCalledRef.current) {
       return;
     }
 
+    const delay = flowStep === "drinking"
+      ? S6_DRINKING_COMPLETED_DISPLAY_DURATION_MS
+      : S6_REFLECTION_DISPLAY_DURATION_MS;
     const timer = setTimeout(() => {
-      if (completionCalledRef.current) {
+      const nextStep = getNextTeaDrinkingFlowStep(flowStep);
+      if (nextStep !== null) {
+        setFlowStep(nextStep);
         return;
       }
+
       completionCalledRef.current = true;
-      onCompleted();
-    }, S6_DRINKING_COMPLETED_DISPLAY_DURATION_MS);
+      onCompleted?.();
+    }, delay);
 
     return () => clearTimeout(timer);
-  }, [drinking.completed, onCompleted]);
+  }, [drinking.completed, flowStep, onCompleted]);
 
   return (
     <View style={styles.screen}>
       <StatusBar hidden />
       <View style={[styles.canvas, { transform: [{ scale }] }]}>
-        <Image source={assets.background} style={styles.background} />
-        <LightSource />
-        <ExpoImage contentFit="fill" source={assets.milestones} style={styles.milestones} />
-        <Text style={[styles.milestoneLabel, styles.nirvanaLabel]}>열반</Text>
-        <Text style={[styles.milestoneLabel, styles.twoSipsLabel]}>두 모금</Text>
-        <Text style={[styles.milestoneLabel, styles.oneSipLabel]}>한 모금</Text>
-        <Lantern top={presentation.lanternTop} />
-        <Teacup />
+        {flowStep === "drinking" ? (
+          <Animated.View
+            exiting={FadeOut.duration(S6_REFLECTION_TRANSITION_DURATION_MS)}
+            style={StyleSheet.absoluteFill}
+          >
+            <Image source={assets.background} style={styles.background} />
+            <LightSource />
+            <ExpoImage contentFit="fill" source={assets.milestones} style={styles.milestones} />
+            <Text style={[styles.milestoneLabel, styles.nirvanaLabel]}>열반</Text>
+            <Text style={[styles.milestoneLabel, styles.twoSipsLabel]}>두 모금</Text>
+            <Text style={[styles.milestoneLabel, styles.oneSipLabel]}>한 모금</Text>
+            <Lantern top={presentation.lanternTop} />
+            <Teacup />
 
-        <View style={styles.sipDots}>
-          {[0, 1, 2].map((dot) => (
-            <View
-              key={dot}
-              style={[
-                styles.sipDot,
-                dot >= drinking.sipCount && !drinking.completed && styles.sipDotPending,
-              ]}
-            />
-          ))}
-        </View>
-        <Text style={styles.sipGuide}>세 모금에 나눠 마셔요</Text>
-        <View style={styles.instructionRow}>
-          <ExpoImage contentFit="fill" source={assets.phoneTilt} style={styles.phoneTilt} />
-          <Text style={styles.instruction}>{presentation.instruction}</Text>
-        </View>
+            <View style={styles.sipDots}>
+              {[0, 1, 2].map((dot) => (
+                <View
+                  key={dot}
+                  style={[
+                    styles.sipDot,
+                    dot >= drinking.sipCount && !drinking.completed && styles.sipDotPending,
+                  ]}
+                />
+              ))}
+            </View>
+            <Text style={styles.sipGuide}>세 모금에 나눠 마셔요</Text>
+            <View style={styles.instructionRow}>
+              <ExpoImage contentFit="fill" source={assets.phoneTilt} style={styles.phoneTilt} />
+              <Text style={styles.instruction}>{presentation.instruction}</Text>
+            </View>
+          </Animated.View>
+        ) : (
+          <TeaDrinkingReflection step={flowStep} />
+        )}
       </View>
     </View>
   );
