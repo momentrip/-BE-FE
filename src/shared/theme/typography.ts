@@ -35,5 +35,5 @@ export const fontAssets = {
   [fontFamily.pretendardBlack]: require('@/assets/fonts/Pretendard-1.3.9/public/static/Pretendard-Black.otf'),
   [fontFamily.main]: require('@/assets/fonts/YleeMortalHeartImmortalMemory.ttf'),
   [fontFamily.sub1]: require('@/assets/fonts/Griun_Gellyroll-Rg.ttf'),
-  [fontFamily.sub3]: require('@/assets/fonts/부산단디손글씨/부산단디손글씨.otf'),
+  [fontFamily.sub3]: require('@/assets/fonts/BusanDandi/BusanDandi.otf'),
 } as const;
