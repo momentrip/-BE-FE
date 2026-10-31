@@ -1,4 +1,5 @@
-import { S3_TEA_OPTIONS } from "../data/s3TeaOptions";
+import { TEA_ID_TO_NAME } from "../data/teaIds";
+import type { TeaId } from "../data/teaIds";
 
 /**
  * 차 id를 화면에 표시할 차 이름으로 변환한다.
@@ -7,5 +8,8 @@ import { S3_TEA_OPTIONS } from "../data/s3TeaOptions";
  * 사용처: home 풍등 상세 모달
  */
 export function getTeaLabel(teaId: string): string {
-  return S3_TEA_OPTIONS.find((tea) => tea.key === teaId)?.name ?? teaId;
+  // "constructor" 같은 Object prototype 키가 차 이름으로 잡히지 않도록 자체 키만 찾는다.
+  return Object.prototype.hasOwnProperty.call(TEA_ID_TO_NAME, teaId)
+    ? TEA_ID_TO_NAME[teaId as TeaId]
+    : teaId;
 }
