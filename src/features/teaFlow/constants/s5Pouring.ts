@@ -7,7 +7,7 @@ export const S5_TEMPORARY_FILL_DURATION_MS = 12_000;
 export const S5_PROGRESS_UPDATE_INTERVAL_MS = 100;
 
 /** S5 완료 화면을 확인한 뒤 다음 차 마시기 화면으로 넘어가기 전 유지 시간. */
-export const S5_COMPLETED_DISPLAY_DURATION_MS = 700;
+export const S5_COMPLETED_DISPLAY_DURATION_MS = 3000;
 
 /** 추천 차 데이터가 연결되기 전 사용하는 Figma 기준 액체 색상. */
 export const S5_DEFAULT_TEA_COLOR = "#8b8c5b";
